@@ -47,7 +47,7 @@ The living document that keeps your AI tool caught up across sessions.
   - **Refactored Match Engine:** Isolated matching logic in `/lib/match-engine.ts` for clean Next.js App Router route separation.
   - **Verified End-to-End & Built:** Validated complete flow (Verify -> Lock Escrow -> 6-Digit Check-in -> Release Payout -> Admin Refund) with 100% success. Production build (`next build --webpack`) verified with zero TypeScript or packaging errors.
 
-* **2026-11-13 (Phase 6 Completed):**
+* **2026-11-13 (Phase 6 Completed & Deployed):**
   - **Zero-Trust & PII Leak Audit:** Centralized validation in `/lib/validations.ts` using strict Zod schemas (`ItemCreateSchema`, `VerifyClaimSchema`, `EscrowLockSchema`, `EscrowReleaseSchema`, `AdminEscrowOverrideSchema`, `AdminItemPatchSchema`). Sanitized all API responses to ensure `privateRawUrl`, `secretAnswer`, `qrToken`, and phone numbers are completely shielded from unauthenticated/public access.
   - **Production Firebase Security Rules (`firestore.rules` & `storage.rules`):**
     - `firestore.rules`: Authored with query-aligned public reads on `ACTIVE` items, RBAC protection, immutable ID/timestamp checks, and complete client write denial on `handoverSessions`, `escrowTransactions`, and `smsNotifications`.
@@ -62,8 +62,18 @@ The living document that keeps your AI tool caught up across sessions.
     - Built branded `public/offline.html` fallback screen and updated service worker (`public/sw.js`) to handle offline navigation gracefully.
     - Added iOS Safari `apple-touch-icon` and standalone meta tags in `src/app/layout.tsx`.
     - Compiled with `npm run build` (`next build --webpack`) with 0 errors across all 14 routes.
-  - **Production Deployment Readiness:**
-    - Prepared comprehensive `.env.example` deployment checklist covering Firebase Client/Admin keys, MTN MoMo/Airtel Money, Africa's Talking SMS, and Cron/Admin security passkeys.
+  - **Git & GitHub Remote:**
+    - Initialized git repository, committed all source code, rules, and configs.
+    - Pushed to GitHub remote repository: `https://github.com/MANZISOLOMON/INSHUTI-APP-2` (branch `main`).
+  - **Vercel Cloud Production Infrastructure:**
+    - **Project ID:** `prj_gxunFtz3dC55wNJV0CrkREP1ar3T` (`lost-it-found-it`)
+    - **Team ID:** `team_iNXt1PoXbKsNCU65tldaYY2E` (`iznam`)
+    - **Node Version:** `20.x` LTS
+    - **SSO Protection:** Disabled for public accessibility.
+    - **Environment Variables Provisioned:** 10 variables (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_PROJECT_ID`, `MOMO_TARGET_ENV`, `ADMIN_SECRET_KEY`, `CRON_SECRET`) configured for `production`, `preview`, and `development`.
+    - **Verified Production URLs:**
+      - Primary: `https://lost-it-found-it-rwanda.vercel.app`
+      - Staging/Beta: `https://lost-it-found-it-beta.vercel.app`
 
 ## Current Milestone Status
 * **Phase 1: Completed** (Environment, Strict Light Theme, PWA Foundation, Main Shell, Navbar, Footer)
@@ -71,4 +81,4 @@ The living document that keeps your AI tool caught up across sessions.
 * **Phase 3: Completed** (Registries & Search Engine: FinderUploadForm, ClaimerBountyForm, ItemCatalog with District/Sector filters, Zero-Trust API routes)
 * **Phase 4: Completed** (Auto-Matching Engine, SMS Fallback Gateway, Dual Verification Option C Modal & API, 48-hour Handover Timer Trigger)
 * **Phase 5: Completed** (MoMo Escrow Locker, QR Handover Check-In & Camera Scanner, Admin Moderation & Dispute Dashboard)
-* **Phase 6: Completed** (Pre-Launch Security Audit, Zod Validation, Hardened Security Rules, Lifecycle Cron Automation, PWA Offline Polish, Production Build)
+* **Phase 6: Completed** (Pre-Launch Security Audit, Zod Validation, Hardened Security Rules, Lifecycle Cron Automation, PWA Offline Polish, Git & Vercel Provisioning)
