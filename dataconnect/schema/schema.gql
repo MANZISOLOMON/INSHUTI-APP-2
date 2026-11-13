@@ -1,0 +1,121 @@
+# Enums
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ItemType {
+  FOUND
+  LOST
+}
+
+enum Category {
+  NATIONAL_ID
+  DRIVING_LICENSE
+  WALLET
+  KEYS
+  OTHER
+}
+
+enum ItemStatus {
+  ACTIVE
+  CLAIMED
+  EXPIRED
+  RESOLVED
+}
+
+enum HandoverStatus {
+  PENDING
+  COMPLETED
+  DISPUTED
+}
+
+enum EscrowStatus {
+  LOCKED
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+enum SmsType {
+  MATCH_ALERT
+  ESCROW_LOCKED
+  HANDOVER_REMINDER
+  DISPUTE_ALERT
+}
+
+# User Model
+type User @table(key: "id") {
+  id: String! @default(expr: "auth.uid")
+  phone: String! @unique
+  fullName: String!
+  role: Role! @default(value: USER)
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+# Item Model (Found / Lost)
+type Item @table {
+  id: UUID! @default(expr: "uuidV4()")
+  type: ItemType!
+  category: Category!
+  title: String! @searchable
+  description: String
+  publicBlurredUrl: String
+  privateRawUrl: String
+  district: String!
+  sector: String!
+  meetingPoint: String
+  scheduledDate: Timestamp
+  feeOrReward: Float! @default(value: 0.0)
+  maskedDocNumber: String
+  status: ItemStatus! @default(value: ACTIVE)
+  createdAt: Timestamp! @default(expr: "request.time")
+  expiresAt: Timestamp!
+  claimedAt: Timestamp
+  finder: User
+  claimer: User
+}
+
+# Verification Model (Dual Verification)
+type Verification @table {
+  id: UUID! @default(expr: "uuidV4()")
+  item: Item! @unique
+  secretPrompt: String
+  secretAnswer: String
+  visualPassed: Boolean! @default(value: false)
+  isVerified: Boolean! @default(value: false)
+}
+
+# Handover Session (Dynamic QR check-in)
+type HandoverSession @table {
+  id: UUID! @default(expr: "uuidV4()")
+  item: Item! @unique
+  qrToken: String! @unique
+  scannedAt: Timestamp
+  status: HandoverStatus! @default(value: PENDING)
+}
+
+# Escrow Transaction (MTN MoMo / Airtel Money locker)
+type EscrowTransaction @table {
+  id: UUID! @default(expr: "uuidV4()")
+  item: Item! @unique
+  payer: User!
+  amount: Float!
+  platformFee: Float! @default(value: 100.0)
+  momoRef: String! @unique
+  status: EscrowStatus! @default(value: LOCKED)
+  createdAt: Timestamp! @default(expr: "request.time")
+  releasedAt: Timestamp
+}
+
+# SMS Notification Log
+type SmsNotification @table {
+  id: UUID! @default(expr: "uuidV4()")
+  user: User!
+  phoneNumber: String!
+  message: String!
+  type: SmsType!
+  sentAt: Timestamp! @default(expr: "request.time")
+}
+

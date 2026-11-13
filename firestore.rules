@@ -1,0 +1,277 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Core Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (('role' in request.auth.token) && request.auth.token.role == 'ADMIN') ||
+        (('admin' in request.auth.token) && request.auth.token.admin == true)
+      );
+    }
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, allowedFields) {
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Helper functions for checking item participation
+    function itemExists(itemId) {
+      return exists(/databases/$(database)/documents/items/$(itemId));
+    }
+
+    function isItemFinder(itemId) {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/items/$(itemId)) &&
+         ('finderId' in get(/databases/$(database)/documents/items/$(itemId)).data) &&
+         get(/databases/$(database)/documents/items/$(itemId)).data.finderId == request.auth.uid) ||
+        (existsAfter(/databases/$(database)/documents/items/$(itemId)) &&
+         ('finderId' in getAfter(/databases/$(database)/documents/items/$(itemId)).data) &&
+         getAfter(/databases/$(database)/documents/items/$(itemId)).data.finderId == request.auth.uid)
+      );
+    }
+
+    function isItemClaimer(itemId) {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/items/$(itemId)) &&
+         ('claimerId' in get(/databases/$(database)/documents/items/$(itemId)).data) &&
+         get(/databases/$(database)/documents/items/$(itemId)).data.claimerId == request.auth.uid) ||
+        (existsAfter(/databases/$(database)/documents/items/$(itemId)) &&
+         ('claimerId' in getAfter(/databases/$(database)/documents/items/$(itemId)).data) &&
+         getAfter(/databases/$(database)/documents/items/$(itemId)).data.claimerId == request.auth.uid)
+      );
+    }
+
+    function isItemParticipant(itemId) {
+      return isItemFinder(itemId) || isItemClaimer(itemId);
+    }
+
+    // ===============================================================
+    // Domain Validators (Applied on create & update)
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(data, ['uid', 'phone', 'fullName', 'role', 'createdAt']) &&
+        hasOnlyAllowedFields(data, ['uid', 'phone', 'fullName', 'role', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+        data.phone is string && data.phone.size() > 0 && data.phone.size() <= 25 &&
+        data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100 &&
+        data.role in ['USER', 'ADMIN'] &&
+        data.createdAt is timestamp &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidItem(data) {
+      return hasRequiredFields(data, ['type', 'title', 'district', 'sector', 'feeOrReward', 'status']) &&
+        hasOnlyAllowedFields(data, [
+          'id', 'type', 'category', 'title', 'description',
+          'publicBlurredUrl', 'privateRawUrl', 'district', 'sector',
+          'meetingPoint', 'scheduledDate', 'feeOrReward', 'maskedDocNumber',
+          'searchKeywords', 'status', 'createdAt', 'expiresAt',
+          'claimedAt', 'finderId', 'claimerId'
+        ]) &&
+        data.type in ['FOUND', 'LOST'] &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 150 &&
+        data.district is string && data.district.size() > 0 && data.district.size() <= 100 &&
+        data.sector is string && data.sector.size() > 0 && data.sector.size() <= 100 &&
+        data.feeOrReward is number && data.feeOrReward >= 0 &&
+        data.status in ['ACTIVE', 'CLAIMED', 'EXPIRED', 'RESOLVED', 'DISPUTED'] &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('category' in data) || data.category in ['NATIONAL_ID', 'DRIVING_LICENSE', 'PASSPORT', 'WALLET', 'KEYS', 'OTHER']) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+        (!('publicBlurredUrl' in data) || (data.publicBlurredUrl is string && data.publicBlurredUrl.size() <= 500)) &&
+        (!('privateRawUrl' in data) || (data.privateRawUrl is string && data.privateRawUrl.size() <= 500)) &&
+        (!('meetingPoint' in data) || (data.meetingPoint is string && data.meetingPoint.size() <= 200)) &&
+        (!('scheduledDate' in data) || data.scheduledDate is timestamp) &&
+        (!('maskedDocNumber' in data) || (data.maskedDocNumber is string && data.maskedDocNumber.size() <= 50)) &&
+        (!('searchKeywords' in data) || (data.searchKeywords is list && data.searchKeywords.size() <= 50)) &&
+        (!('createdAt' in data) || data.createdAt is timestamp) &&
+        (!('expiresAt' in data) || data.expiresAt is timestamp) &&
+        (!('claimedAt' in data) || data.claimedAt is timestamp) &&
+        (!('finderId' in data) || (data.finderId is string && data.finderId.size() <= 128)) &&
+        (!('claimerId' in data) || (data.claimerId is string && data.claimerId.size() <= 128));
+    }
+
+    function isValidVerification(data) {
+      return hasOnlyAllowedFields(data, [
+          'id', 'itemId', 'secretPrompt', 'secretAnswerHash',
+          'visualPassed', 'isVerified', 'verifiedAt', 'verifiedBy'
+        ]) &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('itemId' in data) || (data.itemId is string && data.itemId.size() <= 128)) &&
+        (!('secretPrompt' in data) || (data.secretPrompt is string && data.secretPrompt.size() <= 500)) &&
+        (!('secretAnswerHash' in data) || (data.secretAnswerHash is string && data.secretAnswerHash.size() <= 256)) &&
+        (!('visualPassed' in data) || data.visualPassed is bool) &&
+        (!('isVerified' in data) || data.isVerified is bool) &&
+        (!('verifiedAt' in data) || data.verifiedAt is timestamp) &&
+        (!('verifiedBy' in data) || (data.verifiedBy is string && data.verifiedBy.size() <= 128));
+    }
+
+    // ===============================================================
+    // Collection Security Rules
+    // ===============================================================
+
+    // -----------------------------------------------------------
+    // 1. Users Collection
+    // -----------------------------------------------------------
+    match /users/{userId} {
+      // Direct read restricted to user or Admin (protects phone number & PII)
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+
+      // Create: User can only create their own profile with 'USER' role unless Admin
+      allow create: if isAuthenticated() &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.uid == userId &&
+        (
+          (isOwner(userId) && request.resource.data.role == 'USER') ||
+          isAdmin()
+        );
+
+      // Update: User can update their own profile; cannot change role, uid, or createdAt
+      allow update: if isAuthenticated() &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.uid == userId &&
+        areImmutableFieldsUnchanged(['uid', 'createdAt']) &&
+        (
+          (isOwner(userId) && request.resource.data.role == resource.data.role) ||
+          isAdmin()
+        );
+
+      // Delete: Restricted to Admin
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 2. Items Collection
+    // -----------------------------------------------------------
+    match /items/{itemId} {
+      // Read: Public read if status is ACTIVE; otherwise restricted to finder, claimer, or admin
+      allow read: if resource.data.status == 'ACTIVE' || (
+        isAuthenticated() && (
+          (('finderId' in resource.data) && resource.data.finderId == request.auth.uid) ||
+          (('claimerId' in resource.data) && resource.data.claimerId == request.auth.uid) ||
+          isAdmin()
+        )
+      );
+
+      // Create: Authenticated user creating an ACTIVE item with validated fields
+      allow create: if isAuthenticated() &&
+        request.resource.data.status == 'ACTIVE' &&
+        isValidItem(request.resource.data) &&
+        (
+          (request.resource.data.type == 'FOUND' && (!('finderId' in request.resource.data) || request.resource.data.finderId == request.auth.uid)) ||
+          (request.resource.data.type == 'LOST' && (!('claimerId' in request.resource.data) || request.resource.data.claimerId == request.auth.uid)) ||
+          isAdmin()
+        );
+
+      // Update: Authenticated finder, claimer, or admin
+      allow update: if isAuthenticated() &&
+        isValidItem(request.resource.data) &&
+        areImmutableFieldsUnchanged(['id', 'createdAt', 'type']) &&
+        (
+          (!('finderId' in resource.data) || request.resource.data.finderId == resource.data.finderId)
+        ) &&
+        (
+          (!('claimerId' in resource.data) || request.resource.data.claimerId == resource.data.claimerId)
+        ) &&
+        (
+          (('finderId' in resource.data) && resource.data.finderId == request.auth.uid) ||
+          (('claimerId' in resource.data) && resource.data.claimerId == request.auth.uid) ||
+          (resource.data.status == 'ACTIVE' && (!('claimerId' in resource.data) || resource.data.claimerId == null) && request.resource.data.claimerId == request.auth.uid) ||
+          isAdmin()
+        );
+
+      // Delete: Strictly Admin
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 3. Verifications Collection
+    // -----------------------------------------------------------
+    match /verifications/{itemId} {
+      // Read: Restricted to authenticated item participant (finder/claimer) or admin
+      allow read: if isItemParticipant(itemId) || isAdmin();
+
+      // Create: Authenticated participant or admin; secretAnswerHash only settable by finder or admin
+      allow create: if isAuthenticated() &&
+        (isItemParticipant(itemId) || isAdmin()) &&
+        isValidVerification(request.resource.data) &&
+        (!('secretAnswerHash' in request.resource.data) || isItemFinder(itemId) || isAdmin());
+
+      // Update: Authenticated participant or admin; secretAnswerHash and itemId are strictly immutable
+      allow update: if isAuthenticated() &&
+        (isItemParticipant(itemId) || isAdmin()) &&
+        isValidVerification(request.resource.data) &&
+        areImmutableFieldsUnchanged(['secretAnswerHash', 'itemId']);
+
+      // Delete: Strictly Admin
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 4. Handover Sessions Collection
+    // -----------------------------------------------------------
+    match /handoverSessions/{itemId} {
+      // Read: Restricted to finder or claimer associated with the item, or admin
+      allow read: if isItemParticipant(itemId) || isAdmin();
+
+      // Write: Completely denied from client (managed server-side via Firebase Admin SDK)
+      allow write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // 5. Escrow Transactions Collection
+    // -----------------------------------------------------------
+    match /escrowTransactions/{escrowId} {
+      // Read: Restricted to payer, recipient, or admin
+      allow read: if isAuthenticated() && (
+        resource.data.payerId == request.auth.uid ||
+        (('recipientId' in resource.data) && resource.data.recipientId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      // Write: Completely denied from client (managed server-side via Firebase Admin SDK)
+      allow write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // 6. SMS Notifications Collection
+    // -----------------------------------------------------------
+    match /smsNotifications/{notificationId} {
+      // Read: Restricted to notification recipient or admin
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Write: Completely denied from client (dispatched strictly server-side)
+      allow write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // 7. Global Fallback
+    // -----------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

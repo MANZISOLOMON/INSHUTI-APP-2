@@ -1,0 +1,130 @@
+# List active items for catalog
+query ListActiveItems(
+  $type: ItemType
+  $category: Category
+  $district: String
+  $limit: Int = 50
+) @auth(level: PUBLIC) {
+  items(
+    where: {
+      status: { eq: ACTIVE }
+      type: { eq: $type }
+      category: { eq: $category }
+      district: { eq: $district }
+    }
+    orderBy: [{ createdAt: DESC }]
+    limit: $limit
+  ) {
+    id
+    type
+    category
+    title
+    description
+    publicBlurredUrl
+    district
+    sector
+    meetingPoint
+    feeOrReward
+    maskedDocNumber
+    status
+    createdAt
+    expiresAt
+  }
+}
+
+# Search items by title text
+query SearchItems($query: String!) @auth(level: PUBLIC) {
+  items_search(query: $query) {
+    id
+    type
+    category
+    title
+    description
+    publicBlurredUrl
+    district
+    sector
+    status
+    createdAt
+  }
+}
+
+# Get detailed item by ID
+query GetItem($id: UUID!) @auth(level: PUBLIC) {
+  item(id: $id) {
+    id
+    type
+    category
+    title
+    description
+    publicBlurredUrl
+    district
+    sector
+    meetingPoint
+    scheduledDate
+    feeOrReward
+    maskedDocNumber
+    status
+    createdAt
+    expiresAt
+    claimedAt
+    finder {
+      id
+      phone
+      fullName
+    }
+    claimer {
+      id
+      phone
+      fullName
+    }
+  }
+}
+
+# Get current user profile
+query GetCurrentUser($id: String!) @auth(level: USER) {
+  user(id: $id) {
+    id
+    phone
+    fullName
+    role
+    createdAt
+    updatedAt
+  }
+}
+
+# List items found by current user
+query GetMyFoundItems @auth(level: USER) {
+  items(
+    where: {
+      finder: { id: { eq_expr: "auth.uid" } }
+    }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    type
+    category
+    title
+    status
+    createdAt
+    feeOrReward
+  }
+}
+
+# List items claimed/reported lost by current user
+query GetMyLostItems @auth(level: USER) {
+  items(
+    where: {
+      claimer: { id: { eq_expr: "auth.uid" } }
+    }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    type
+    category
+    title
+    status
+    createdAt
+    feeOrReward
+  }
+}
+

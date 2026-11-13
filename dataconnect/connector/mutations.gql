@@ -1,0 +1,118 @@
+# Upsert user profile (maps to Firebase Auth UID)
+mutation UpsertUser($phone: String!, $fullName: String!) @auth(level: USER) {
+  user_upsert(data: {
+    id_expr: "auth.uid",
+    phone: $phone,
+    fullName: $fullName,
+    updatedAt_expr: "request.time"
+  })
+}
+
+# Create a Found Item (Finder is current auth user)
+mutation CreateFoundItem(
+  $category: Category!
+  $title: String!
+  $description: String
+  $publicBlurredUrl: String
+  $privateRawUrl: String
+  $district: String!
+  $sector: String!
+  $meetingPoint: String
+  $feeOrReward: Float = 0.0
+  $maskedDocNumber: String
+  $expiresAt: Timestamp!
+) @auth(level: USER) {
+  item_insert(data: {
+    type: FOUND,
+    category: $category,
+    title: $title,
+    description: $description,
+    publicBlurredUrl: $publicBlurredUrl,
+    privateRawUrl: $privateRawUrl,
+    district: $district,
+    sector: $sector,
+    meetingPoint: $meetingPoint,
+    feeOrReward: $feeOrReward,
+    maskedDocNumber: $maskedDocNumber,
+    expiresAt: $expiresAt,
+    finder: { id_expr: "auth.uid" }
+  })
+}
+
+# Create a Lost Item (Claimer/Owner is current auth user)
+mutation CreateLostItem(
+  $category: Category!
+  $title: String!
+  $description: String
+  $district: String!
+  $sector: String!
+  $meetingPoint: String
+  $feeOrReward: Float = 0.0
+  $maskedDocNumber: String
+  $expiresAt: Timestamp!
+) @auth(level: USER) {
+  item_insert(data: {
+    type: LOST,
+    category: $category,
+    title: $title,
+    description: $description,
+    district: $district,
+    sector: $sector,
+    meetingPoint: $meetingPoint,
+    feeOrReward: $feeOrReward,
+    maskedDocNumber: $maskedDocNumber,
+    expiresAt: $expiresAt,
+    claimer: { id_expr: "auth.uid" }
+  })
+}
+
+# Update Item Status
+mutation UpdateItemStatus($id: UUID!, $status: ItemStatus!) @auth(level: USER) {
+  item_update(
+    id: $id,
+    data: {
+      status: $status
+    }
+  )
+}
+
+# Create Verification Challenge
+mutation CreateVerification(
+  $itemId: UUID!
+  $secretPrompt: String
+  $secretAnswer: String
+) @auth(level: USER) {
+  verification_insert(data: {
+    item: { id: $itemId },
+    secretPrompt: $secretPrompt,
+    secretAnswer: $secretAnswer
+  })
+}
+
+# Create Handover Session
+mutation CreateHandoverSession(
+  $itemId: UUID!
+  $qrToken: String!
+) @auth(level: USER) {
+  handoverSession_insert(data: {
+    item: { id: $itemId },
+    qrToken: $qrToken
+  })
+}
+
+# Create Escrow Transaction
+mutation CreateEscrowTransaction(
+  $itemId: UUID!,
+  $amount: Float!,
+  $platformFee: Float = 100.0,
+  $momoRef: String!
+) @auth(level: USER) {
+  escrowTransaction_insert(data: {
+    item: { id: $itemId },
+    payer: { id_expr: "auth.uid" },
+    amount: $amount,
+    platformFee: $platformFee,
+    momoRef: $momoRef
+  })
+}
+

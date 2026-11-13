@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js build output
+/.next/
+/out/
+
+# Production build artifacts
+build/
+
+# Misc
+.DS_Store
+*.pem
+
+# Local environment and secret files
+.env*.local
+.env
+.data/
+
+# Vercel CLI
+.vercel/
+
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts

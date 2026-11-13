@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: Checks if user has admin claims
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.role == 'ADMIN' || 
+        request.auth.token.admin == true
+      );
+    }
+
+    // 1. Zero-Trust Public Blurred Previews:
+    // Allow public read globally so the catalog can render blurred photos.
+    // Block direct client write: all uploads are processed through server-side Sharp pipeline.
+    match /items-public-blurred/{itemId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /items-public-blurred/{itemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 2. Private Raw Sensitive Photos:
+    // Block ALL direct client read and write access.
+    // Raw sensitive photos are served exclusively via short-lived server-generated
+    // signed URLs (via Firebase Admin SDK) ONLY after verification.isVerified === true.
+    match /items-private-raw/{itemId}/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    match /items-private-raw/{itemId} {
+      allow read, write: if false;
+    }
+
+    // 3. Global Default Deny for any other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
