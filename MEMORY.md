@@ -65,15 +65,25 @@ The living document that keeps your AI tool caught up across sessions.
   - **Git & GitHub Remote:**
     - Initialized git repository, committed all source code, rules, and configs.
     - Pushed to GitHub remote repository: `https://github.com/MANZISOLOMON/INSHUTI-APP-2` (branch `main`).
-  - **Vercel Cloud Production Infrastructure:**
+  - **Vercel Cloud Production Infrastructure (Active & Live):**
     - **Project ID:** `prj_gxunFtz3dC55wNJV0CrkREP1ar3T` (`lost-it-found-it`)
+    - **Deployment ID:** `dpl_7JAwUNhTerZ47PHd3ByyYhzyohwk`
     - **Team ID:** `team_iNXt1PoXbKsNCU65tldaYY2E` (`iznam`)
-    - **Node Version:** `20.x` LTS
+    - **Node Version:** `26.x`
     - **SSO Protection:** Disabled for public accessibility.
-    - **Environment Variables Provisioned:** 10 variables (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_PROJECT_ID`, `MOMO_TARGET_ENV`, `ADMIN_SECRET_KEY`, `CRON_SECRET`) configured for `production`, `preview`, and `development`.
-    - **Verified Production URLs:**
+    - **Environment Variables Provisioned:** 10 variables (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_PROJECT_ID`, `MOMO_TARGET_ENV`, `ADMIN_SECRET_KEY`, `CRON_SECRET`) active in `production`, `preview`, and `development`.
+    - **Verified Production URLs (Tested HTTP 200 OK):**
       - Primary: `https://lost-it-found-it-rwanda.vercel.app`
       - Staging/Beta: `https://lost-it-found-it-beta.vercel.app`
+      - Direct Deployment: `https://lost-it-found-k5bi061ut-iznam.vercel.app`
+    - **Verified Production Endpoints:**
+      - `/` (Homepage feed) -> 200 OK
+      - `/search` (Catalog & filters) -> 200 OK
+      - `/report-found` (Finder upload wizard) -> 200 OK
+      - `/post-lost` (Claimer bounty form) -> 200 OK
+      - `/admin` (Moderation & dispute ledger) -> 200 OK
+      - `/api/items` (Zero-trust search API) -> 200 OK (Returning live sanitized items)
+      - `/api/cron/lifecycle` (Automated sweep) -> 401 Unauthorized without passkey / 200 OK with Bearer passkey
 
 ## Current Milestone Status
 * **Phase 1: Completed** (Environment, Strict Light Theme, PWA Foundation, Main Shell, Navbar, Footer)
