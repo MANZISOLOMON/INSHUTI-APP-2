@@ -158,13 +158,69 @@ const DEFAULT_SEED_VERIFICATIONS: Verification[] = [
     visualPassed: true,
     isVerified: true,
     verifiedBy: "verified_claimer",
-    verifiedAt: "2026-11-13T11:24:32.181Z"
+    verifiedAt: "2026-11-13T11:24:32.181Z",
+    failedAttempts: 0,
+    isLocked: false
   },
   {
     id: "item_1794563582817_b80b58f0",
     itemId: "item_1794563582817_b80b58f0",
+    secretPrompt: "What is the passport issuing authority code?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
     visualPassed: false,
-    isVerified: false
+    isVerified: false,
+    failedAttempts: 0,
+    isLocked: false
+  },
+  {
+    id: "item-seed-01",
+    itemId: "item-seed-01",
+    secretPrompt: "What is the village name inscribed on the back of the ID?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
+    visualPassed: false,
+    isVerified: false,
+    failedAttempts: 0,
+    isLocked: false
+  },
+  {
+    id: "item-seed-02",
+    itemId: "item-seed-02",
+    secretPrompt: "What is the license category stamp color?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
+    visualPassed: false,
+    isVerified: false,
+    failedAttempts: 0,
+    isLocked: false
+  },
+  {
+    id: "item-seed-03",
+    itemId: "item-seed-03",
+    secretPrompt: "What is the middle name of the passport holder?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
+    visualPassed: false,
+    isVerified: false,
+    failedAttempts: 0,
+    isLocked: false
+  },
+  {
+    id: "item-seed-04",
+    itemId: "item-seed-04",
+    secretPrompt: "What color is the keychain strap?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
+    visualPassed: false,
+    isVerified: false,
+    failedAttempts: 0,
+    isLocked: false
+  },
+  {
+    id: "item-seed-05",
+    itemId: "item-seed-05",
+    secretPrompt: "Which bank issued the card inside the front sleeve?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
+    visualPassed: false,
+    isVerified: false,
+    failedAttempts: 0,
+    isLocked: false
   }
 ];
 

@@ -129,33 +129,42 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (verification?.secretAnswerHash) {
-        const computedHash = crypto
-          .createHash("sha256")
-          .update(answer.trim().toLowerCase())
-          .digest("hex");
+      if (!verification?.secretAnswerHash) {
+        return NextResponse.json(
+          {
+            success: false,
+            verified: false,
+            error: "No secret challenge question is registered for this item. Please use Option B (Visual Verification) or contact the Finder.",
+          },
+          { status: 400 }
+        );
+      }
 
-        if (computedHash !== verification.secretAnswerHash) {
-          const newAttempts = currentAttempts + 1;
-          const isLocked = newAttempts >= 3;
+      const computedHash = crypto
+        .createHash("sha256")
+        .update(answer.trim().toLowerCase())
+        .digest("hex");
 
-          await updateItemVerification(itemId, {
-            failedAttempts: newAttempts,
-            isLocked,
-          });
+      if (computedHash !== verification.secretAnswerHash) {
+        const newAttempts = currentAttempts + 1;
+        const isLocked = newAttempts >= 3;
 
-          return NextResponse.json(
-            { 
-              success: false, 
-              verified: false, 
-              error: isLocked
-                ? "Incorrect answer. Maximum 3 attempts exceeded. Option A is now locked for security."
-                : `The answer provided did not match the secret challenge. ${3 - newAttempts} attempt(s) remaining.`,
-              attemptsRemaining: Math.max(0, 3 - newAttempts),
-            },
-            { status: 401 }
-          );
-        }
+        await updateItemVerification(itemId, {
+          failedAttempts: newAttempts,
+          isLocked,
+        });
+
+        return NextResponse.json(
+          { 
+            success: false, 
+            verified: false, 
+            error: isLocked
+              ? "Incorrect answer. Maximum 3 attempts exceeded. Option A is now locked for security."
+              : `The answer provided did not match the secret challenge. ${3 - newAttempts} attempt(s) remaining.`,
+            attemptsRemaining: Math.max(0, 3 - newAttempts),
+          },
+          { status: 401 }
+        );
       }
 
       // Verification Passed via Option A! Reset attempts & generate short-lived signed URL
