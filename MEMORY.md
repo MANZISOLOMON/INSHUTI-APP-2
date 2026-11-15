@@ -71,4 +71,27 @@ The living document that keeps your AI tool caught up across sessions.
 * **Phase 4: Completed** (Auto-Matching Engine, SMS Fallback Gateway, Dual Verification Option C Modal & API, 48-hour Handover Timer Trigger)
 * **Phase 5: Completed** (MoMo Escrow Locker, QR Handover Check-In & Camera Scanner, Admin Moderation & Dispute Dashboard)
 * **Phase 6: Completed** (Pre-Launch Security Audit, Zod Validation, Hardened Security Rules, Lifecycle Cron Automation, PWA Offline Polish, Git & Vercel Provisioning)
-* **UX Polish & Live Production: Live & Verified** (Serverless read-only fs fix, dismissible top PWA banner, consumer-facing 3-step guide, and dynamic Kigali district/sector filtering)
+* **2026-11-15 (Compliance, Legal, & Accessibility Updates):**
+  - **Legal & Policy Pages (`/privacy`, `/terms`, `/refund`, `/cookies`):**
+    - Built comprehensive, accessible static policy pages conforming to Rwanda Personal Data Protection Law No. 058/2021.
+    - Outlined zero-trust Gaussian auto-blurring (sigma 28), cryptographic SHA-256 challenge hashing, masked document identifiers (`119988****521`), 48-hour handover grace periods, and transparent 100 RWF micro-fee splits covering SMS carrier costs.
+  - **Cookie Consent & Mandatory Form Consents:**
+    - Built `CookieBanner.tsx` at the bottom of the viewport with an *"Accept Essential"* button, disclosing essential security and offline local storage keys.
+    - Added mandatory legal checkbox to both `FinderUploadForm.tsx` and `ClaimerBountyForm.tsx`: *"I agree to the Terms of Service and verify that I am legally authorized to post this item."*
+  - **Account Data Deletion & Privacy Rights (`/api/user/delete-account` & `/settings`):**
+    - Built server-side purge endpoint unlinking citizen item listings and wiping SMS records under Law No. 058/2021.
+    - Built dedicated `/settings` page featuring a confirmation modal and self-service "Delete Account & Purge Data" control.
+  - **Accessibility & Business Details:**
+    - Added keyboard `Escape` listeners and `role="dialog"` accessibility tags to all modals (`VerificationModal.tsx`, `HandoverQRModal.tsx`).
+    - Added descriptive `alt` tags across all image containers.
+    - Updated `Footer.tsx` with business operator details (Digital Elevation Solutions, Kanombe, Kigali, Rwanda • support@digitalelevation.rw • +250 788 000 000).
+  - **Live Production Deployment:** Deployed commit `3e5aa70` (`dpl_BCVCKb5Cy4LCvzmW6ZgQuHt1xqVP`) and verified HTTP 200 OK across `/privacy`, `/terms`, `/refund`, `/cookies`, and `/settings`.
+
+## Current Milestone Status
+* **Phase 1: Completed** (Environment, Strict Light Theme, PWA Foundation, Main Shell, Navbar, Footer)
+* **Phase 2: Completed** (Firebase Migration, Firestore Models, Auth Helpers, Storage Rules, Redaction & Blurring)
+* **Phase 3: Completed** (Registries & Search Engine: FinderUploadForm, ClaimerBountyForm, ItemCatalog with District/Sector filters, Zero-Trust API routes)
+* **Phase 4: Completed** (Auto-Matching Engine, SMS Fallback Gateway, Dual Verification Option C Modal & API, 48-hour Handover Timer Trigger)
+* **Phase 5: Completed** (MoMo Escrow Locker, QR Handover Check-In & Camera Scanner, Admin Moderation & Dispute Dashboard)
+* **Phase 6: Completed** (Pre-Launch Security Audit, Zod Validation, Hardened Security Rules, Lifecycle Cron Automation, PWA Offline Polish, Git & Vercel Provisioning)
+* **Phase 7 (Compliance, Legal & Accessibility): Live & Verified** (Rwanda Law 058/2021 privacy pages, cookie banner, mandatory terms consent checkboxes, account data purge endpoint, accessibility modal escape traps, and operator business details in footer)
