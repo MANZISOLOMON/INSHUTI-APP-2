@@ -1,82 +1,267 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { Item, Verification } from "@/types/database";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { withTimeout } from "@/lib/timeout-helper";
 
-const LOCAL_DATA_DIR = path.join(process.cwd(), ".data");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOCAL_DATA_DIR = isServerless
+  ? path.join(os.tmpdir(), "lost-it-found-it-data")
+  : path.join(process.cwd(), ".data");
 const LOCAL_ITEMS_FILE = path.join(LOCAL_DATA_DIR, "items.json");
 const LOCAL_VERIFICATIONS_FILE = path.join(LOCAL_DATA_DIR, "verifications.json");
 
+const DEFAULT_SEED_ITEMS: Item[] = [
+  {
+    id: "item_1794556370102_39756495",
+    type: "FOUND",
+    category: "NATIONAL_ID",
+    title: "Kigali Found National ID Test",
+    description: "Found during Phase 3 verification test near Gisozi sector office",
+    district: "Gasabo",
+    sector: "Gisozi",
+    meetingPoint: "Gisozi Sector Office Police Post",
+    feeOrReward: 2500,
+    maskedDocNumber: "119958****912",
+    searchKeywords: [
+      "kigali", "found", "national", "id", "test", "gasabo", "gisozi",
+      "119958", "912", "during", "phase", "verification", "near", "sector", "office"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-13T07:52:50.106Z",
+    expiresAt: "2026-12-13T07:52:50.106Z",
+    claimedAt: "2026-11-13T11:24:32.181Z"
+  },
+  {
+    id: "item_1794563582817_b80b58f0",
+    type: "FOUND",
+    category: "PASSPORT",
+    title: "Found East African Passport at BK Arena",
+    description: "Recovered outside Gate 2 near parking",
+    district: "Gasabo",
+    sector: "Remera",
+    meetingPoint: "BK Arena Police Post",
+    feeOrReward: 5000,
+    maskedDocNumber: "PC8822****410",
+    searchKeywords: [
+      "found", "east", "african", "passport", "at", "bk", "arena",
+      "gasabo", "remera", "pc8822", "410", "recovered", "outside", "gate", "near", "parking"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-13T09:53:02.818Z",
+    expiresAt: "2026-12-13T09:53:02.818Z"
+  },
+  {
+    id: "item-seed-01",
+    type: "FOUND",
+    category: "NATIONAL_ID",
+    title: "Rwanda National ID Card (Found in Kimironko)",
+    description: "Found near Kimironko Market main entrance taxi park. Clean condition.",
+    district: "Gasabo",
+    sector: "Kimironko",
+    meetingPoint: "Kimironko Police Post",
+    feeOrReward: 2000,
+    maskedDocNumber: "119988****521",
+    searchKeywords: [
+      "rwanda", "national", "id", "card", "kimironko", "gasabo",
+      "119988", "521", "market"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-12T14:30:00.000Z",
+    expiresAt: "2026-12-12T14:30:00.000Z"
+  },
+  {
+    id: "item-seed-02",
+    type: "FOUND",
+    category: "DRIVING_LICENSE",
+    title: "Class B Driving Permit",
+    description: "Discovered on a bench near CHUK hospital reception.",
+    district: "Nyarugenge",
+    sector: "Nyarugenge",
+    meetingPoint: "CHUK Main Gate Police Booth",
+    feeOrReward: 3000,
+    maskedDocNumber: "DL-2024****902",
+    searchKeywords: [
+      "class", "driving", "permit", "license", "nyarugenge",
+      "chuk", "hospital", "dl-2024", "902"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-12T16:15:00.000Z",
+    expiresAt: "2026-12-12T16:15:00.000Z"
+  },
+  {
+    id: "item-seed-03",
+    type: "LOST",
+    category: "PASSPORT",
+    title: "East African Passport (Urgent Bounty)",
+    description: "Lost during basketball game event near BK Arena. Generous reward locked in MoMo escrow.",
+    district: "Gasabo",
+    sector: "Remera",
+    meetingPoint: "BK Arena Ticket Booth",
+    feeOrReward: 25000,
+    maskedDocNumber: "PC-8822****410",
+    searchKeywords: [
+      "east", "african", "passport", "remera", "gasabo",
+      "bk", "arena", "pc-8822", "410", "bounty"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-11T19:00:00.000Z",
+    expiresAt: "2026-12-11T19:00:00.000Z"
+  },
+  {
+    id: "item-seed-04",
+    type: "FOUND",
+    category: "KEYS",
+    title: "Motorcycle Key with Red Leather Tag",
+    description: "TVS Apache motorcycle key found at Kacyiru moto parking stage.",
+    district: "Gasabo",
+    sector: "Kacyiru",
+    meetingPoint: "Kacyiru Bus Terminal Office",
+    feeOrReward: 1500,
+    maskedDocNumber: "KEY-****882",
+    searchKeywords: [
+      "motorcycle", "key", "tvs", "apache", "kacyiru",
+      "gasabo", "bus", "terminal"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-12T10:00:00.000Z",
+    expiresAt: "2026-12-12T10:00:00.000Z"
+  },
+  {
+    id: "item-seed-05",
+    type: "FOUND",
+    category: "WALLET",
+    title: "Black Leather Bifold Wallet",
+    description: "Contains bank card and student ID. Found in coffee shop near Musanze bus park.",
+    district: "Musanze",
+    sector: "Muhoza",
+    meetingPoint: "Musanze District Administration Office",
+    feeOrReward: 5000,
+    maskedDocNumber: "ID-9921****114",
+    searchKeywords: [
+      "black", "leather", "bifold", "wallet", "musanze",
+      "muhoza", "bank", "card", "student"
+    ],
+    status: "ACTIVE",
+    createdAt: "2026-11-12T11:20:00.000Z",
+    expiresAt: "2026-12-12T11:20:00.000Z"
+  }
+];
+
+const DEFAULT_SEED_VERIFICATIONS: Verification[] = [
+  {
+    id: "item_1794556370102_39756495",
+    itemId: "item_1794556370102_39756495",
+    secretPrompt: "What is the birth sector written on the back?",
+    secretAnswerHash: "2ccb1b7f6d36245717df0d7fdb113bba39c8b5324f376478ed105e5908b836e8",
+    visualPassed: true,
+    isVerified: true,
+    verifiedBy: "verified_claimer",
+    verifiedAt: "2026-11-13T11:24:32.181Z"
+  },
+  {
+    id: "item_1794563582817_b80b58f0",
+    itemId: "item_1794563582817_b80b58f0",
+    visualPassed: false,
+    isVerified: false
+  }
+];
+
 function ensureLocalDir() {
-  if (!fs.existsSync(LOCAL_DATA_DIR)) {
-    fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(LOCAL_DATA_DIR)) {
+      fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn("[Local Store] Warning: Could not create local data dir:", (err as Error).message);
   }
 }
 
 function readLocalItems(): Item[] {
-  ensureLocalDir();
-  if (!fs.existsSync(LOCAL_ITEMS_FILE)) {
-    return [];
-  }
   try {
-    const raw = fs.readFileSync(LOCAL_ITEMS_FILE, "utf-8");
-    return JSON.parse(raw) as Item[];
+    if (fs.existsSync(LOCAL_ITEMS_FILE)) {
+      const raw = fs.readFileSync(LOCAL_ITEMS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as Item[];
+      }
+    }
   } catch {
-    return [];
+    // Fallback to seed items
   }
+  return [...DEFAULT_SEED_ITEMS];
 }
 
 function writeLocalItems(items: Item[]) {
-  ensureLocalDir();
-  fs.writeFileSync(LOCAL_ITEMS_FILE, JSON.stringify(items, null, 2), "utf-8");
+  try {
+    ensureLocalDir();
+    fs.writeFileSync(LOCAL_ITEMS_FILE, JSON.stringify(items, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[Local Store] Write items skipped:", (err as Error).message);
+  }
 }
 
 function readLocalVerifications(): Verification[] {
-  ensureLocalDir();
-  if (!fs.existsSync(LOCAL_VERIFICATIONS_FILE)) {
-    return [];
-  }
   try {
-    const raw = fs.readFileSync(LOCAL_VERIFICATIONS_FILE, "utf-8");
-    return JSON.parse(raw) as Verification[];
+    if (fs.existsSync(LOCAL_VERIFICATIONS_FILE)) {
+      const raw = fs.readFileSync(LOCAL_VERIFICATIONS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as Verification[];
+      }
+    }
   } catch {
-    return [];
+    // Fallback
   }
+  return [...DEFAULT_SEED_VERIFICATIONS];
 }
 
 function writeLocalVerifications(verifications: Verification[]) {
-  ensureLocalDir();
-  fs.writeFileSync(LOCAL_VERIFICATIONS_FILE, JSON.stringify(verifications, null, 2), "utf-8");
+  try {
+    ensureLocalDir();
+    fs.writeFileSync(LOCAL_VERIFICATIONS_FILE, JSON.stringify(verifications, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[Local Store] Write verifications skipped:", (err as Error).message);
+  }
 }
 
 /**
  * Saves an Item to Firestore with seamless local persistence fallback.
  */
 export async function persistItem(item: Item, verification?: Partial<Verification>): Promise<void> {
-  try {
-    // 1. Attempt Firestore write via Admin SDK
-    await adminDb.collection("items").doc(item.id).set({
-      ...item,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(
+        adminDb.collection("items").doc(item.id).set({
+          ...item,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        }),
+        2000,
+        null
+      );
 
-    if (verification) {
-      await adminDb.collection("verifications").doc(item.id).set({
-        id: item.id,
-        itemId: item.id,
-        ...verification,
-        createdAt: new Date().toISOString(),
-      });
+      if (verification) {
+        await withTimeout(
+          adminDb.collection("verifications").doc(item.id).set({
+            id: item.id,
+            itemId: item.id,
+            ...verification,
+            createdAt: new Date().toISOString(),
+          }),
+          2000,
+          null
+        );
+      }
+
+      console.log(`[Firestore] Item ${item.id} saved to Cloud Firestore successfully.`);
+    } catch (err) {
+      console.warn(`[Firestore Note] Cloud Firestore write skipped or in offline mode: ${(err as Error).message}`);
     }
-
-    console.log(`[Firestore] Item ${item.id} saved to Cloud Firestore successfully.`);
-  } catch (err) {
-    console.warn(`[Firestore Note] Cloud Firestore write skipped or in offline mode: ${(err as Error).message}`);
   }
 
-  // 2. Always persist locally for instant dev testing & offline resilience
+  // Always persist locally for instant dev testing & offline resilience
   const localItems = readLocalItems().filter((i) => i.id !== item.id);
   localItems.unshift(item);
   writeLocalItems(localItems);
@@ -98,13 +283,15 @@ export async function persistItem(item: Item, verification?: Partial<Verificatio
  * Returns all raw items (for internal server-side matching and verification).
  */
 export async function getAllItemsRaw(): Promise<Item[]> {
-  try {
-    const snap = await withTimeout(adminDb.collection("items").get(), 400, null);
-    if (snap && !snap.empty) {
-      return snap.docs.map((d) => d.data() as Item);
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const snap = await withTimeout(adminDb.collection("items").get(), 1000, null);
+      if (snap && !snap.empty) {
+        return snap.docs.map((d) => d.data() as Item);
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
   return readLocalItems();
 }
@@ -113,13 +300,15 @@ export async function getAllItemsRaw(): Promise<Item[]> {
  * Retrieves a single Item by its ID.
  */
 export async function getItemById(itemId: string): Promise<Item | null> {
-  try {
-    const doc = await withTimeout(adminDb.collection("items").doc(itemId).get(), 400, null);
-    if (doc && doc.exists) {
-      return doc.data() as Item;
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const doc = await withTimeout(adminDb.collection("items").doc(itemId).get(), 1000, null);
+      if (doc && doc.exists) {
+        return doc.data() as Item;
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   const found = readLocalItems().find((i) => i.id === itemId);
@@ -130,13 +319,15 @@ export async function getItemById(itemId: string): Promise<Item | null> {
  * Retrieves the Verification record for a given Item.
  */
 export async function getVerificationByItemId(itemId: string): Promise<Verification | null> {
-  try {
-    const doc = await withTimeout(adminDb.collection("verifications").doc(itemId).get(), 400, null);
-    if (doc && doc.exists) {
-      return doc.data() as Verification;
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const doc = await withTimeout(adminDb.collection("verifications").doc(itemId).get(), 1000, null);
+      if (doc && doc.exists) {
+        return doc.data() as Verification;
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   const found = readLocalVerifications().find((v) => v.itemId === itemId);
@@ -154,7 +345,7 @@ export async function updateItemVerification(
   let item = await getItemById(itemId);
   if (!item) return { success: false };
 
-  let verification = await getVerificationByItemId(itemId);
+  const verification = await getVerificationByItemId(itemId);
   const now = new Date().toISOString();
 
   const updatedVerification: Verification = {
@@ -177,16 +368,18 @@ export async function updateItemVerification(
   }
 
   // Update in Firestore
-  try {
-    await adminDb.collection("verifications").doc(itemId).set(updatedVerification, { merge: true });
-    if (updateItemStatus) {
-      await adminDb.collection("items").doc(itemId).update({
-        status: "CLAIMED",
-        claimedAt: now,
-      });
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("verifications").doc(itemId).set(updatedVerification, { merge: true }), 1500, null);
+      if (updateItemStatus) {
+        await withTimeout(adminDb.collection("items").doc(itemId).update({
+          status: "CLAIMED",
+          claimedAt: now,
+        }), 1500, null);
+      }
+    } catch {
+      // Fallback to local
     }
-  } catch {
-    // Fallback to local
   }
 
   // Update in local files
@@ -218,25 +411,27 @@ export async function queryItems(filters?: {
 }): Promise<Item[]> {
   let items: Item[] = [];
 
-  try {
-    let queryRef: FirebaseFirestore.Query = adminDb.collection("items").where("status", "==", "ACTIVE");
+  if (isFirebaseAdminConfigured()) {
+    try {
+      let queryRef: FirebaseFirestore.Query = adminDb.collection("items").where("status", "==", "ACTIVE");
 
-    if (filters?.type && filters.type !== "ALL") {
-      queryRef = queryRef.where("type", "==", filters.type);
-    }
-    if (filters?.category && filters.category !== "ALL") {
-      queryRef = queryRef.where("category", "==", filters.category);
-    }
-    if (filters?.district) {
-      queryRef = queryRef.where("district", "==", filters.district);
-    }
+      if (filters?.type && filters.type !== "ALL") {
+        queryRef = queryRef.where("type", "==", filters.type);
+      }
+      if (filters?.category && filters.category !== "ALL") {
+        queryRef = queryRef.where("category", "==", filters.category);
+      }
+      if (filters?.district) {
+        queryRef = queryRef.where("district", "==", filters.district);
+      }
 
-    const snapshot = await queryRef.get();
-    if (!snapshot.empty) {
-      items = snapshot.docs.map((d) => d.data() as Item);
+      const snapshot = await withTimeout(queryRef.get(), 1500, null);
+      if (snapshot && !snapshot.empty) {
+        items = snapshot.docs.map((d) => d.data() as Item);
+      }
+    } catch (err) {
+      console.warn(`[Firestore Note] Cloud Firestore query fallback to local cache: ${(err as Error).message}`);
     }
-  } catch (err) {
-    console.warn(`[Firestore Note] Cloud Firestore query fallback to local cache: ${(err as Error).message}`);
   }
 
   if (items.length === 0) {
@@ -283,10 +478,12 @@ export async function updateItemStatus(itemId: string, status: Item["status"]): 
   item.status = status;
   writeLocalItems(localItems);
 
-  try {
-    await adminDb.collection("items").doc(itemId).update({ status });
-  } catch {
-    // Fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("items").doc(itemId).update({ status }), 1500, null);
+    } catch {
+      // Fallback
+    }
   }
 
   return item;
@@ -299,10 +496,12 @@ export async function deleteItem(itemId: string): Promise<boolean> {
   const localItems = readLocalItems().filter((i) => i.id !== itemId);
   writeLocalItems(localItems);
 
-  try {
-    await adminDb.collection("items").doc(itemId).delete();
-  } catch {
-    // Fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("items").doc(itemId).delete(), 1500, null);
+    } catch {
+      // Fallback
+    }
   }
 
   return true;
@@ -312,13 +511,15 @@ export async function deleteItem(itemId: string): Promise<boolean> {
  * Retrieves all items for the Admin Moderation Dashboard (includes privateRawUrl).
  */
 export async function getAllItemsForAdmin(): Promise<Item[]> {
-  try {
-    const snap = await withTimeout(adminDb.collection("items").orderBy("createdAt", "desc").get(), 400, null);
-    if (snap && !snap.empty) {
-      return snap.docs.map((d) => d.data() as Item);
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const snap = await withTimeout(adminDb.collection("items").orderBy("createdAt", "desc").get(), 1000, null);
+      if (snap && !snap.empty) {
+        return snap.docs.map((d) => d.data() as Item);
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   return readLocalItems();
@@ -402,5 +603,3 @@ export async function runLifecycleMaintenance(): Promise<{
     disputedItems,
   };
 }
-
-

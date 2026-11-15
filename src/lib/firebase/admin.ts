@@ -77,5 +77,9 @@ export const adminAuth = new Proxy({} as Auth, {
   get: (_, prop) => (auth() as unknown as Record<string | symbol, unknown>)[prop],
 });
 
+export function isFirebaseAdminConfigured(): boolean {
+  return Boolean(projectId && clientEmail && privateKey);
+}
+
 export { getAdminApp };
 export default adminApp;

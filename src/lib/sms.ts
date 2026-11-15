@@ -1,34 +1,49 @@
 import crypto from "crypto";
 import { SmsNotification, SmsType, SmsStatus } from "@/types/database";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { withTimeout } from "@/lib/timeout-helper";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
-const LOCAL_DATA_DIR = path.join(process.cwd(), ".data");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOCAL_DATA_DIR = isServerless
+  ? path.join(os.tmpdir(), "lost-it-found-it-data")
+  : path.join(process.cwd(), ".data");
 const LOCAL_SMS_FILE = path.join(LOCAL_DATA_DIR, "sms_notifications.json");
 
 function ensureLocalDir() {
-  if (!fs.existsSync(LOCAL_DATA_DIR)) {
-    fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(LOCAL_DATA_DIR)) {
+      fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn("[Local SMS Store] Directory creation skipped:", (err as Error).message);
   }
 }
 
 function readLocalSms(): SmsNotification[] {
-  ensureLocalDir();
-  if (!fs.existsSync(LOCAL_SMS_FILE)) {
-    return [];
-  }
   try {
-    const raw = fs.readFileSync(LOCAL_SMS_FILE, "utf-8");
-    return JSON.parse(raw) as SmsNotification[];
+    if (fs.existsSync(LOCAL_SMS_FILE)) {
+      const raw = fs.readFileSync(LOCAL_SMS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed as SmsNotification[];
+      }
+    }
   } catch {
-    return [];
+    // Fallback
   }
+  return [];
 }
 
 function writeLocalSms(notifications: SmsNotification[]) {
-  ensureLocalDir();
-  fs.writeFileSync(LOCAL_SMS_FILE, JSON.stringify(notifications, null, 2), "utf-8");
+  try {
+    ensureLocalDir();
+    fs.writeFileSync(LOCAL_SMS_FILE, JSON.stringify(notifications, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[Local SMS Store] Write SMS notifications skipped:", (err as Error).message);
+  }
 }
 
 export interface SendSmsParams {
@@ -119,10 +134,12 @@ export async function sendSmsAlert({
   };
 
   // 1. Try persisting to Cloud Firestore
-  try {
-    await adminDb.collection("smsNotifications").doc(notificationId).set(notification);
-  } catch (err) {
-    // Firestore write fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("smsNotifications").doc(notificationId).set(notification), 1500, null);
+    } catch {
+      // Firestore write fallback
+    }
   }
 
   // 2. Persist to local JSON file for inspection
@@ -141,18 +158,23 @@ export async function sendSmsAlert({
  * Returns recent SMS notifications from the log.
  */
 export async function getRecentSmsNotifications(limitCount: number = 20): Promise<SmsNotification[]> {
-  try {
-    const snap = await adminDb
-      .collection("smsNotifications")
-      .orderBy("sentAt", "desc")
-      .limit(limitCount)
-      .get();
-    if (!snap.empty) {
-      return snap.docs.map((doc) => doc.data() as SmsNotification);
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const snap = await withTimeout(
+        adminDb
+          .collection("smsNotifications")
+          .orderBy("sentAt", "desc")
+          .limit(limitCount)
+          .get(),
+        1000,
+        null
+      );
+      if (snap && !snap.empty) {
+        return snap.docs.map((doc) => doc.data() as SmsNotification);
+      }
+    } catch {
+      // Fallback to local
     }
-  } catch (err) {
-    // Fallback to local
   }
   return readLocalSms().slice(0, limitCount);
 }
-

@@ -1,10 +1,14 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { EscrowTransaction, EscrowStatus, HandoverSession, HandoverStatus } from "@/types/database";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { withTimeout } from "@/lib/timeout-helper";
 
-const LOCAL_DATA_DIR = path.join(process.cwd(), ".data");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOCAL_DATA_DIR = isServerless
+  ? path.join(os.tmpdir(), "lost-it-found-it-data")
+  : path.join(process.cwd(), ".data");
 const LOCAL_ESCROW_FILE = path.join(LOCAL_DATA_DIR, "escrow_transactions.json");
 const LOCAL_HANDOVER_FILE = path.join(LOCAL_DATA_DIR, "handover_sessions.json");
 
@@ -14,54 +18,99 @@ export interface ExtendedHandoverSession extends HandoverSession {
   claimerPhone?: string;
 }
 
+const DEFAULT_SEED_ESCROWS: EscrowTransaction[] = [
+  {
+    id: "escrow_item_1794556370102_39756495_1794657039043",
+    itemId: "item_1794556370102_39756495",
+    payerId: "verified_claimer",
+    recipientId: null,
+    amount: 2500,
+    platformFee: 100,
+    totalLocked: 2600,
+    momoRef: "MOMO_COLL_1794657039035_FFA239",
+    status: "LOCKED",
+    createdAt: "2026-11-14T11:50:39.042Z"
+  }
+];
+
+const DEFAULT_SEED_HANDOVERS: ExtendedHandoverSession[] = [
+  {
+    id: "handover_item_1794556370102_39756495",
+    itemId: "item_1794556370102_39756495",
+    qrToken: "qr_token_item_1794556370102_39756495_36f0e4bd828f0c96",
+    fallbackCode: "353083",
+    status: "PENDING",
+    expiresAt: "2026-11-16T11:50:39.042Z",
+    claimerPhone: "+250788123456"
+  }
+];
+
 function ensureLocalDir() {
-  if (!fs.existsSync(LOCAL_DATA_DIR)) {
-    fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(LOCAL_DATA_DIR)) {
+      fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn("[Local Escrow Store] Directory creation skipped:", (err as Error).message);
   }
 }
 
 function readLocalEscrows(): EscrowTransaction[] {
-  ensureLocalDir();
-  if (!fs.existsSync(LOCAL_ESCROW_FILE)) {
-    return [];
-  }
   try {
-    return JSON.parse(fs.readFileSync(LOCAL_ESCROW_FILE, "utf-8")) as EscrowTransaction[];
+    if (fs.existsSync(LOCAL_ESCROW_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(LOCAL_ESCROW_FILE, "utf-8"));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as EscrowTransaction[];
+      }
+    }
   } catch {
-    return [];
+    // Fallback
   }
+  return [...DEFAULT_SEED_ESCROWS];
 }
 
 function writeLocalEscrows(transactions: EscrowTransaction[]) {
-  ensureLocalDir();
-  fs.writeFileSync(LOCAL_ESCROW_FILE, JSON.stringify(transactions, null, 2), "utf-8");
+  try {
+    ensureLocalDir();
+    fs.writeFileSync(LOCAL_ESCROW_FILE, JSON.stringify(transactions, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[Local Escrow Store] Write escrows skipped:", (err as Error).message);
+  }
 }
 
 function readLocalHandovers(): ExtendedHandoverSession[] {
-  ensureLocalDir();
-  if (!fs.existsSync(LOCAL_HANDOVER_FILE)) {
-    return [];
-  }
   try {
-    return JSON.parse(fs.readFileSync(LOCAL_HANDOVER_FILE, "utf-8")) as ExtendedHandoverSession[];
+    if (fs.existsSync(LOCAL_HANDOVER_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(LOCAL_HANDOVER_FILE, "utf-8"));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as ExtendedHandoverSession[];
+      }
+    }
   } catch {
-    return [];
+    // Fallback
   }
+  return [...DEFAULT_SEED_HANDOVERS];
 }
 
 function writeLocalHandovers(sessions: ExtendedHandoverSession[]) {
-  ensureLocalDir();
-  fs.writeFileSync(LOCAL_HANDOVER_FILE, JSON.stringify(sessions, null, 2), "utf-8");
+  try {
+    ensureLocalDir();
+    fs.writeFileSync(LOCAL_HANDOVER_FILE, JSON.stringify(sessions, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[Local Escrow Store] Write handovers skipped:", (err as Error).message);
+  }
 }
 
 /**
  * Saves or updates an EscrowTransaction in Firestore & local cache
  */
 export async function persistEscrowTransaction(tx: EscrowTransaction): Promise<void> {
-  try {
-    await withTimeout(adminDb.collection("escrowTransactions").doc(tx.id).set(tx), 500, null);
-  } catch {
-    // Firestore fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("escrowTransactions").doc(tx.id).set(tx), 1500, null);
+    } catch {
+      // Firestore fallback
+    }
   }
 
   const list = readLocalEscrows().filter((item) => item.id !== tx.id);
@@ -73,13 +122,15 @@ export async function persistEscrowTransaction(tx: EscrowTransaction): Promise<v
  * Retrieves an EscrowTransaction by escrow ID
  */
 export async function getEscrowById(escrowId: string): Promise<EscrowTransaction | null> {
-  try {
-    const doc = await withTimeout(adminDb.collection("escrowTransactions").doc(escrowId).get(), 500, null);
-    if (doc && doc.exists) {
-      return doc.data() as EscrowTransaction;
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const doc = await withTimeout(adminDb.collection("escrowTransactions").doc(escrowId).get(), 1000, null);
+      if (doc && doc.exists) {
+        return doc.data() as EscrowTransaction;
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   const found = readLocalEscrows().find((e) => e.id === escrowId);
@@ -90,17 +141,19 @@ export async function getEscrowById(escrowId: string): Promise<EscrowTransaction
  * Retrieves an EscrowTransaction by item ID
  */
 export async function getEscrowByItemId(itemId: string): Promise<EscrowTransaction | null> {
-  try {
-    const snap = await withTimeout(
-      adminDb.collection("escrowTransactions").where("itemId", "==", itemId).limit(1).get(),
-      500,
-      null
-    );
-    if (snap && !snap.empty) {
-      return snap.docs[0].data() as EscrowTransaction;
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const snap = await withTimeout(
+        adminDb.collection("escrowTransactions").where("itemId", "==", itemId).limit(1).get(),
+        1000,
+        null
+      );
+      if (snap && !snap.empty) {
+        return snap.docs[0].data() as EscrowTransaction;
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   const found = readLocalEscrows().find((e) => e.itemId === itemId);
@@ -111,17 +164,19 @@ export async function getEscrowByItemId(itemId: string): Promise<EscrowTransacti
  * Retrieves all escrow transactions for reporting & admin dashboard
  */
 export async function getAllEscrowTransactions(): Promise<EscrowTransaction[]> {
-  try {
-    const snap = await withTimeout(
-      adminDb.collection("escrowTransactions").orderBy("createdAt", "desc").get(),
-      500,
-      null
-    );
-    if (snap && !snap.empty) {
-      return snap.docs.map((d) => d.data() as EscrowTransaction);
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const snap = await withTimeout(
+        adminDb.collection("escrowTransactions").orderBy("createdAt", "desc").get(),
+        1000,
+        null
+      );
+      if (snap && !snap.empty) {
+        return snap.docs.map((d) => d.data() as EscrowTransaction);
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   return readLocalEscrows();
@@ -143,10 +198,12 @@ export async function updateEscrowStatus(
     tx.releasedAt = new Date().toISOString();
   }
 
-  try {
-    await withTimeout(adminDb.collection("escrowTransactions").doc(escrowId).set(tx, { merge: true }), 500, null);
-  } catch {
-    // Fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("escrowTransactions").doc(escrowId).set(tx, { merge: true }), 1000, null);
+    } catch {
+      // Fallback
+    }
   }
 
   writeLocalEscrows(all);
@@ -157,10 +214,12 @@ export async function updateEscrowStatus(
  * Saves a HandoverSession in Firestore & local cache
  */
 export async function persistHandoverSession(session: ExtendedHandoverSession): Promise<void> {
-  try {
-    await withTimeout(adminDb.collection("handoverSessions").doc(session.itemId).set(session), 500, null);
-  } catch {
-    // Fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("handoverSessions").doc(session.itemId).set(session), 1000, null);
+    } catch {
+      // Fallback
+    }
   }
 
   const list = readLocalHandovers().filter((s) => s.itemId !== session.itemId);
@@ -172,13 +231,15 @@ export async function persistHandoverSession(session: ExtendedHandoverSession): 
  * Retrieves a HandoverSession by itemId
  */
 export async function getHandoverSessionByItemId(itemId: string): Promise<ExtendedHandoverSession | null> {
-  try {
-    const doc = await withTimeout(adminDb.collection("handoverSessions").doc(itemId).get(), 500, null);
-    if (doc && doc.exists) {
-      return doc.data() as ExtendedHandoverSession;
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const doc = await withTimeout(adminDb.collection("handoverSessions").doc(itemId).get(), 1000, null);
+      if (doc && doc.exists) {
+        return doc.data() as ExtendedHandoverSession;
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   const found = readLocalHandovers().find((s) => s.itemId === itemId);
@@ -193,26 +254,28 @@ export async function getHandoverSessionByTokenOrCode(
 ): Promise<ExtendedHandoverSession | null> {
   const cleanInput = tokenOrCode.trim();
 
-  try {
-    let snap = await withTimeout(
-      adminDb.collection("handoverSessions").where("qrToken", "==", cleanInput).limit(1).get(),
-      400,
-      null
-    );
-    if (snap && !snap.empty) {
-      return snap.docs[0].data() as ExtendedHandoverSession;
-    }
+  if (isFirebaseAdminConfigured()) {
+    try {
+      let snap = await withTimeout(
+        adminDb.collection("handoverSessions").where("qrToken", "==", cleanInput).limit(1).get(),
+        1000,
+        null
+      );
+      if (snap && !snap.empty) {
+        return snap.docs[0].data() as ExtendedHandoverSession;
+      }
 
-    snap = await withTimeout(
-      adminDb.collection("handoverSessions").where("fallbackCode", "==", cleanInput).limit(1).get(),
-      400,
-      null
-    );
-    if (snap && !snap.empty) {
-      return snap.docs[0].data() as ExtendedHandoverSession;
+      snap = await withTimeout(
+        adminDb.collection("handoverSessions").where("fallbackCode", "==", cleanInput).limit(1).get(),
+        1000,
+        null
+      );
+      if (snap && !snap.empty) {
+        return snap.docs[0].data() as ExtendedHandoverSession;
+      }
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Fallback
   }
 
   const found = readLocalHandovers().find(
@@ -237,17 +300,19 @@ export async function updateHandoverStatus(
     }
   }
 
-  try {
-    await withTimeout(
-      adminDb.collection("handoverSessions").doc(itemId).set({
-        status,
-        scannedAt: status === "COMPLETED" ? new Date().toISOString() : null,
-      }, { merge: true }),
-      500,
-      null
-    );
-  } catch {
-    // Fallback
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(
+        adminDb.collection("handoverSessions").doc(itemId).set({
+          status,
+          scannedAt: status === "COMPLETED" ? new Date().toISOString() : null,
+        }, { merge: true }),
+        1000,
+        null
+      );
+    } catch {
+      // Fallback
+    }
   }
 
   writeLocalHandovers(all);

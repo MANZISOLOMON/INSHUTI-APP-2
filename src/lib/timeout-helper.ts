@@ -7,6 +7,9 @@ export async function withTimeout<T>(
   ms: number = 600,
   fallbackVal?: T
 ): Promise<T> {
+  // Prevent unhandled promise rejections in Node 26+ if the promise rejects after timeout or resolution
+  promise.catch(() => {});
+
   let timer: NodeJS.Timeout;
 
   const timeoutPromise = new Promise<T>((resolve, reject) => {

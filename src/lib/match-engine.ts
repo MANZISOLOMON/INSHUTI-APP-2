@@ -3,8 +3,13 @@ import { getItemById, getAllItemsRaw } from "@/lib/items-store";
 import { sendSmsAlert } from "@/lib/sms";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
-const LOCAL_MATCHES_FILE = path.join(process.cwd(), ".data", "matches.json");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOCAL_DATA_DIR = isServerless
+  ? path.join(os.tmpdir(), "lost-it-found-it-data")
+  : path.join(process.cwd(), ".data");
+const LOCAL_MATCHES_FILE = path.join(LOCAL_DATA_DIR, "matches.json");
 
 export interface MatchCandidate {
   item: Item;
@@ -136,6 +141,9 @@ export async function runAutoMatch(targetItem: Item): Promise<MatchCandidate[]> 
   // Persist match log
   if (candidates.length > 0) {
     try {
+      if (!fs.existsSync(LOCAL_DATA_DIR)) {
+        fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+      }
       const matchLog = {
         targetItemId: targetItem.id,
         timestamp: new Date().toISOString(),
