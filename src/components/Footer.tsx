@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import { Shield, Lock, Smartphone, CheckCircle, HeartHandshake } from "lucide-react";
+import { Shield, Lock, Smartphone, CheckCircle, HeartHandshake, Download } from "lucide-react";
 
 export default function Footer() {
+  const handlePwaClick = () => {
+    if (typeof window !== "undefined" && window.triggerPwaInstall) {
+      window.triggerPwaInstall();
+    } else {
+      alert("To install Lost & Found:\n• On iPhone: Tap the Share button in Safari, then tap 'Add to Home Screen'.\n• On Android: Tap Chrome menu (3 dots), then tap 'Install app' or 'Add to Home Screen'.");
+    }
+  };
+
   return (
     <footer className="bg-white border-t border-[#E5E9E4] mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -17,11 +27,11 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-xs text-[#65736B] leading-relaxed">
-              Decentralized registry connecting finders and owners through privacy-first indexing, zero-trust photo protection, and Mobile Money micro-escrow.
+              Rwanda&apos;s privacy-first community registry connecting finders and rightful owners through zero-trust photo protection, confidential verification, and Mobile Money micro-escrow.
             </p>
             <div className="flex items-center gap-2 text-xs font-semibold text-[#1B4D3E]">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Phase 5 Architecture Active
+              Official Community Registry • Rwanda
             </div>
           </div>
 
@@ -30,24 +40,24 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1A201C]">For Finders</h4>
             <ul className="space-y-2 text-xs text-[#65736B]">
               <li>
-                <a href="#report-found" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/report-found" className="hover:text-[#1B4D3E] transition-colors">
                   Report Found Property
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#handover" className="hover:text-[#1B4D3E] transition-colors">
-                  QR Code Handover System
-                </a>
+                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors">
+                  QR Code Handover Check-In
+                </Link>
               </li>
               <li>
-                <a href="#payouts" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/report-found" className="hover:text-[#1B4D3E] transition-colors">
                   MoMo Finder Delivery Fee Payouts
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#safe-points" className="hover:text-[#1B4D3E] transition-colors">
-                  Approved Sector Handover Points
-                </a>
+                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors">
+                  Approved Sector Police Posts
+                </Link>
               </li>
             </ul>
           </div>
@@ -57,24 +67,28 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1A201C]">For Claimers</h4>
             <ul className="space-y-2 text-xs text-[#65736B]">
               <li>
-                <a href="#registry" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/search" className="hover:text-[#1B4D3E] transition-colors">
                   Search Registered Documents
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#post-bounty" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/post-lost" className="hover:text-[#1B4D3E] transition-colors">
                   Post Lost Item Bounty
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#dual-verification" className="hover:text-[#1B4D3E] transition-colors">
-                  Dual Verification (Option C)
-                </a>
+                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors">
+                  Confidential Challenge Verification
+                </Link>
               </li>
               <li>
-                <a href="#sms-alerts" className="hover:text-[#1B4D3E] transition-colors">
-                  SMS Fallback Notification Setup
-                </a>
+                <button
+                  onClick={handlePwaClick}
+                  className="hover:text-[#1B4D3E] transition-colors text-left flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#10B981]" />
+                  <span>Install Mobile Web App (PWA)</span>
+                </button>
               </li>
             </ul>
           </div>
@@ -103,18 +117,22 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-[#E5E9E4] mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#65736B]">
-          <p>© {new Date().getFullYear()} Lost & Found Registry. Strict Light-Mode Architecture.</p>
+          <p>© {new Date().getFullYear()} Lost & Found Rwanda. Zero-Trust Community Safety.</p>
           <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1.5 font-medium text-[#1B4D3E]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
-              PWA Ready (Add to Home Screen)
-            </span>
+            <button
+              onClick={handlePwaClick}
+              className="inline-flex items-center gap-1.5 font-medium text-[#1B4D3E] hover:underline"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-[#10B981]" />
+              <span>Install PWA App</span>
+            </button>
             <span>•</span>
-            <span className="text-[#65736B]">Version 1.0 (Phase 1)</span>
+            <Link href="/admin" className="text-[#65736B] hover:text-[#1B4D3E] transition-colors">
+              Admin Portal
+            </Link>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-

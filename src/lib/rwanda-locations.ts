@@ -118,3 +118,18 @@ export const RWANDA_LOCATIONS: RwandaProvince[] = [
 
 export const ALL_DISTRICTS = RWANDA_LOCATIONS.flatMap((p) => p.districts.map((d) => d.name)).sort();
 
+export const KIGALI_DISTRICTS = ["Gasabo", "Kicukiro", "Nyarugenge"];
+
+export function getSectorsForDistrict(districtName: string): string[] {
+  if (!districtName) return [];
+  for (const prov of RWANDA_LOCATIONS) {
+    const match = prov.districts.find(
+      (d) => d.name.toLowerCase() === districtName.trim().toLowerCase()
+    );
+    if (match) {
+      return [...match.sectors].sort();
+    }
+  }
+  return [];
+}
+
