@@ -74,6 +74,8 @@ export interface Verification {
   itemId: string;
   secretPrompt?: string;     // Dual Verification Option A: Challenge question
   secretAnswerHash?: string; // Hashed answer
+  failedAttempts?: number;   // Brute-force counter for Option A (locked after 3)
+  isLocked?: boolean;        // Locked if failedAttempts >= 3
   visualPassed: boolean;     // Dual Verification Option B: Photo comparison pass
   isVerified: boolean;       // True if EITHER Option A OR Option B passed
   verifiedAt?: FirestoreDate | null;

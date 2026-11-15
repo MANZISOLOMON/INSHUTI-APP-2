@@ -18,9 +18,16 @@ build/
 *.pem
 
 # Local environment and secret files
-.env*.local
-.env
+.env*
+*.env
+*.env.local
 .data/
+
+# Credentials & Service Account Secrets
+service-account*.json
+*credentials*.json
+firebase-admin-key*.json
+*.key
 
 # Vercel CLI
 .vercel/
@@ -28,6 +35,3 @@ build/
 # TypeScript cache
 *.tsbuildinfo
 next-env.d.ts
-
-
-.vercel

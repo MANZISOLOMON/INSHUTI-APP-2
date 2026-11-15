@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getItemById, getVerificationByItemId } from "@/lib/items-store";
-import { requestMoMoCollection } from "@/lib/momo";
+import { requestMoMoCollection, verifyMoMoPayment } from "@/lib/momo";
 import { 
   persistEscrowTransaction, 
   persistHandoverSession, 
@@ -10,6 +10,8 @@ import {
 import { sendSmsAlert } from "@/lib/sms";
 import { EscrowTransaction } from "@/types/database";
 import { EscrowLockSchema } from "@/lib/validations";
+import { applyRateLimit } from "@/lib/rate-limiter";
+import { sanitizeClientPayload } from "@/lib/auth-middleware";
 
 const MIN_ESCROW_AMOUNT = 500;      // 500 RWF
 const MAX_ESCROW_AMOUNT = 500000;   // 500,000 RWF
@@ -21,7 +23,11 @@ const PLATFORM_MICRO_FEE = 100;     // Flat 100 RWF platform fee to cover SMS ga
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rateLimitError = applyRateLimit(request, "escrow_lock", 10, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
+    const rawBody = await request.json().catch(() => ({}));
+    const body = sanitizeClientPayload(rawBody);
     const validation = EscrowLockSchema.safeParse(body);
 
     if (!validation.success) {
@@ -85,6 +91,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Mobile Money collection failed or was declined by user." },
         { status: 502 }
+      );
+    }
+
+    // Server-to-server payment verification with carrier gateway
+    const paymentCheck = await verifyMoMoPayment(momoResult.momoRef);
+    if (!paymentCheck.isVerified || paymentCheck.status !== "SUCCESSFUL") {
+      return NextResponse.json(
+        { success: false, error: paymentCheck.message || "Carrier payment verification failed." },
+        { status: 402 }
       );
     }
 

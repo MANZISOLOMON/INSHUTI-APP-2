@@ -10,15 +10,21 @@ import { disburseMoMoPayout } from "@/lib/momo";
 import { sendSmsAlert } from "@/lib/sms";
 import { adminDb } from "@/lib/firebase/admin";
 import { EscrowReleaseSchema } from "@/lib/validations";
+import { applyRateLimit } from "@/lib/rate-limiter";
+import { sanitizeClientPayload } from "@/lib/auth-middleware";
 
 /**
  * POST /api/escrow/release
  * Validates in-person QR scan / fallback code, updates HandoverSession & EscrowTransaction,
- * disburses MoMo payout, and transitions item to RESOLVED.
+ * disburses MoMo payout with idempotency protection, and transitions item to RESOLVED.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rateLimitError = applyRateLimit(request, "escrow_release", 10, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
+    const rawBody = await request.json().catch(() => ({}));
+    const body = sanitizeClientPayload(rawBody);
     const validation = EscrowReleaseSchema.safeParse(body);
 
     if (!validation.success) {
@@ -94,13 +100,16 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // 3. Trigger MoMo Payout to Finder
+    // 3. Trigger MoMo Payout to Finder with Idempotency Key
     const finderPhone = session.finderPhone || rawItem?.contactPhone || "+250788123456";
+    const idempotencyKey = `payout_${resolvedItemId}_${session.qrToken.slice(-8)}_${escrow.id}`;
+
     const payoutResult = await disburseMoMoPayout({
       amount: escrow.amount,
       recipientPhone: finderPhone,
       externalId: resolvedItemId,
       disbursementNote: `Handover verified for: ${item?.title || "Item"}`,
+      idempotencyKey,
     });
 
     // 4. Atomic updates

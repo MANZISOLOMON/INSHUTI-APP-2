@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { Item, Category, ItemType } from "@/types/database";
-import { maskDocumentNumber, processZeroTrustUpload } from "@/lib/redact";
+import { maskDocumentNumber, processZeroTrustUpload, validateImageBuffer } from "@/lib/redact";
 import { persistItem, queryItems } from "@/lib/items-store";
 import { generateSearchKeywords } from "@/types/database";
 import { adminStorage } from "@/lib/firebase/admin";
 import { runAutoMatch } from "@/lib/match-engine";
 import { ItemCreateSchema } from "@/lib/validations";
+import { applyRateLimit, verifyAppCheckHeader } from "@/lib/rate-limiter";
+import { sanitizeClientPayload } from "@/lib/auth-middleware";
 
 /**
  * Hash a secret answer for Option A Challenge Question
@@ -44,6 +46,9 @@ function sanitizePublicItem(item: Item): Partial<Item> {
  */
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitError = applyRateLimit(request, "items_get", 60, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "ALL";
     const category = searchParams.get("category") || "ALL";
@@ -81,9 +86,20 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitError = applyRateLimit(request, "items_post", 15, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
+    const appCheck = verifyAppCheckHeader(request);
+    if (!appCheck.valid) {
+      return NextResponse.json(
+        { success: false, error: appCheck.warning || "App Check verification failed." },
+        { status: 403 }
+      );
+    }
+
     const formData = await request.formData();
 
-    const rawPayload = {
+    const rawPayload = sanitizeClientPayload({
       type: formData.get("type"),
       category: formData.get("category"),
       title: formData.get("title"),
@@ -96,7 +112,7 @@ export async function POST(request: NextRequest) {
       secretPrompt: formData.get("secretPrompt") || "",
       secretAnswer: formData.get("secretAnswer") || "",
       contactPhone: formData.get("contactPhone") || "",
-    };
+    });
 
     const validation = ItemCreateSchema.safeParse(rawPayload);
     if (!validation.success) {
@@ -140,8 +156,16 @@ export async function POST(request: NextRequest) {
     let privateRawUrl: string | undefined = undefined;
 
     if (imageFile && imageFile.size > 0) {
+      const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
+      const imgCheck = validateImageBuffer(fileBuffer);
+      if (!imgCheck.valid) {
+        return NextResponse.json(
+          { success: false, error: imgCheck.error || "Invalid image upload." },
+          { status: 400 }
+        );
+      }
+
       try {
-        const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
         const { blurredBuffer, rawBuffer, publicStoragePath, privateStoragePath } =
           await processZeroTrustUpload(fileBuffer, itemId);
 

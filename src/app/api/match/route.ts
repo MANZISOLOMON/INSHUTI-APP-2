@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getItemById } from "@/lib/items-store";
 import { runAutoMatch } from "@/lib/match-engine";
+import { applyRateLimit } from "@/lib/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitError = applyRateLimit(request, "match", 15, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get("itemId");
 

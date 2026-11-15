@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { getItemById, getVerificationByItemId, updateItemVerification } from "@/lib/items-store";
 import { sendSmsAlert } from "@/lib/sms";
 import { VerifyClaimSchema } from "@/lib/validations";
+import { applyRateLimit } from "@/lib/rate-limiter";
+import { generateSignedRawUrl } from "@/lib/redact";
 
 /**
  * GET /api/verify?itemId=...
@@ -10,6 +12,9 @@ import { VerifyClaimSchema } from "@/lib/validations";
  */
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitError = applyRateLimit(request, "verify_get", 60, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get("itemId");
 
@@ -30,15 +35,17 @@ export async function GET(request: NextRequest) {
 
     const verification = await getVerificationByItemId(itemId);
 
-    // If already verified, return unlocked details
+    // If already verified, generate a 15-minute signed URL and return unlocked details
     if (verification?.isVerified) {
       const rawItem = item as unknown as { contactPhone?: string };
+      const signedRawUrl = await generateSignedRawUrl(itemId, 15);
+
       return NextResponse.json({
         success: true,
         isVerified: true,
         secretPrompt: verification.secretPrompt,
         unlockedDetails: {
-          privateRawUrl: item.privateRawUrl || item.publicBlurredUrl,
+          privateRawUrl: signedRawUrl,
           meetingPoint: item.meetingPoint,
           contactPhone: rawItem.contactPhone || "+250 788 000 000 (Safe Handover)",
           claimedAt: item.claimedAt,
@@ -49,6 +56,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       isVerified: false,
+      isLocked: Boolean(verification?.isLocked),
+      attemptsRemaining: Math.max(0, 3 - (verification?.failedAttempts || 0)),
       secretPrompt: verification?.secretPrompt || "What is a distinguishing secret detail on this item?",
       hasChallengePrompt: Boolean(verification?.secretPrompt),
     });
@@ -64,10 +73,13 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/verify
  * Dual Verification (Option C) handler:
- * Option A (Challenge Question) OR Option B (Visual Photo Check).
+ * Option A (Challenge Question with 3-attempt brute-force lock) OR Option B (Visual Photo Check).
  */
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitError = applyRateLimit(request, "verify_post", 15, 60 * 1000);
+    if (rateLimitError) return rateLimitError;
+
     const body = await request.json();
     const validation = VerifyClaimSchema.safeParse(body);
 
@@ -95,8 +107,21 @@ export async function POST(request: NextRequest) {
 
     const verification = await getVerificationByItemId(itemId);
 
-    // 1. OPTION A: Secret Challenge Q&A
+    // 1. OPTION A: Secret Challenge Q&A with Brute-Force Protection
     if (option === "CHALLENGE") {
+      const currentAttempts = verification?.failedAttempts || 0;
+
+      // Lockout check: max 3 attempts
+      if (verification?.isLocked || currentAttempts >= 3) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Verification locked: Maximum 3 secret challenge attempts exceeded. Please contact the Finder or Admin.",
+          },
+          { status: 429 }
+        );
+      }
+
       if (!answer || typeof answer !== "string") {
         return NextResponse.json(
           { success: false, error: "Please enter your answer to the secret challenge." },
@@ -104,33 +129,45 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (!verification?.secretAnswerHash) {
-        // If finder didn't set a secret answer, automatically allow challenge pass with reasonable string
-        console.log(`[Verification] No secretAnswerHash configured for item ${itemId}. Auto-approving.`);
-      } else {
+      if (verification?.secretAnswerHash) {
         const computedHash = crypto
           .createHash("sha256")
           .update(answer.trim().toLowerCase())
           .digest("hex");
 
         if (computedHash !== verification.secretAnswerHash) {
+          const newAttempts = currentAttempts + 1;
+          const isLocked = newAttempts >= 3;
+
+          await updateItemVerification(itemId, {
+            failedAttempts: newAttempts,
+            isLocked,
+          });
+
           return NextResponse.json(
             { 
               success: false, 
               verified: false, 
-              error: "The answer provided does not match the secret challenge. Try again or use Option B (Visual Photo Check)." 
+              error: isLocked
+                ? "Incorrect answer. Maximum 3 attempts exceeded. Option A is now locked for security."
+                : `The answer provided did not match the secret challenge. ${3 - newAttempts} attempt(s) remaining.`,
+              attemptsRemaining: Math.max(0, 3 - newAttempts),
             },
             { status: 401 }
           );
         }
       }
 
-      // Verification Passed via Option A!
+      // Verification Passed via Option A! Reset attempts & generate short-lived signed URL
+      const signedRawUrl = await generateSignedRawUrl(itemId, 15);
+
       const updateResult = await updateItemVerification(
         itemId,
         {
           isVerified: true,
           verifiedBy: claimerId || "verified_claimer",
+          failedAttempts: 0,
+          isLocked: false,
         },
         true // Shifts status to 'CLAIMED' and starts 48h handover timer
       );
@@ -151,9 +188,9 @@ export async function POST(request: NextRequest) {
         success: true,
         verified: true,
         method: "CHALLENGE",
-        message: "Dual Verification passed! Private image and finder contact details unlocked.",
+        message: "Dual Verification passed! Private image and finder contact details unlocked for 15 minutes.",
         unlockedDetails: {
-          privateRawUrl: updateResult.item?.privateRawUrl || item.publicBlurredUrl,
+          privateRawUrl: signedRawUrl,
           meetingPoint: item.meetingPoint,
           contactPhone: rawItem?.contactPhone || "+250 788 000 000 (Safe Handover)",
           claimedAt: updateResult.item?.claimedAt,
@@ -163,12 +200,16 @@ export async function POST(request: NextRequest) {
 
     // 2. OPTION B: Visual Photo Compare
     if (option === "VISUAL") {
+      const signedRawUrl = await generateSignedRawUrl(itemId, 15);
+
       const updateResult = await updateItemVerification(
         itemId,
         {
           visualPassed: true,
           isVerified: true,
           verifiedBy: claimerId || "verified_claimer",
+          failedAttempts: 0,
+          isLocked: false,
         },
         true
       );
@@ -178,7 +219,7 @@ export async function POST(request: NextRequest) {
       if (rawItem?.contactPhone) {
         await sendSmsAlert({
           to: rawItem.contactPhone,
-          message: `Inshuti Visual Verification: A claimer verified visual marks for '${item.title}'. Please prepare for safe in-person handover.`,
+          message: `Inshuti Found Alert: Visual comparison requested and approved for '${item.title}'. 48-hour handover window is active.`,
           type: "HANDOVER_REMINDER",
           userId: itemId,
         });
@@ -188,9 +229,9 @@ export async function POST(request: NextRequest) {
         success: true,
         verified: true,
         method: "VISUAL",
-        message: "Visual comparison verified! Private details unlocked.",
+        message: "Visual photo verification approved! Finder contact unlocked for 15 minutes.",
         unlockedDetails: {
-          privateRawUrl: updateResult.item?.privateRawUrl || item.publicBlurredUrl,
+          privateRawUrl: signedRawUrl,
           meetingPoint: item.meetingPoint,
           contactPhone: rawItem?.contactPhone || "+250 788 000 000 (Safe Handover)",
           claimedAt: updateResult.item?.claimedAt,
@@ -199,15 +240,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, error: "Invalid verification option selected. Use CHALLENGE or VISUAL." },
+      { success: false, error: "Invalid verification option selected." },
       { status: 400 }
     );
   } catch (error) {
     console.error("[API Verify POST Error]:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to process verification challenge." },
+      { success: false, error: "Verification processing failed" },
       { status: 500 }
     );
   }
 }
-
