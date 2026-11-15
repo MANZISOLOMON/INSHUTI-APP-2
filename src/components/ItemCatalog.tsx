@@ -473,7 +473,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                   {item.publicBlurredUrl ? (
                     <img
                       src={item.publicBlurredUrl}
-                      alt="Zero-Trust Blurred Preview"
+                      alt={`Zero-trust blurred preview of ${item.title}`}
                       className="w-full h-full object-cover filter blur-[4px]"
                     />
                   ) : (

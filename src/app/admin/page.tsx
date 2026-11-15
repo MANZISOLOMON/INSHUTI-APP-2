@@ -563,7 +563,7 @@ export default function AdminDashboardPage() {
                                 ? item.privateRawUrl
                                 : (item.publicBlurredUrl || item.privateRawUrl)
                             }
-                            alt={item.title}
+                            alt={`Administrative inspection photograph of ${item.title}`}
                             className={`w-full h-full object-cover transition-all ${
                               !isShowingRaw && item.publicBlurredUrl ? "filter blur-[4px]" : ""
                             }`}

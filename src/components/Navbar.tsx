@@ -11,6 +11,7 @@ export default function Navbar() {
     { name: "Search Registry", href: "/search" },
     { name: "Report Found", href: "/report-found" },
     { name: "Post Bounty", href: "/post-lost" },
+    { name: "Privacy & Account", href: "/settings" },
     { name: "Admin Portal", href: "/admin" },
   ];
 

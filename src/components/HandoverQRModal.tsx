@@ -53,6 +53,18 @@ export default function HandoverQRModal({
 
   const scannerRef = useRef<HTMLDivElement>(null);
 
+  // Keyboard Escape listener
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Initialize or fetch escrow & handover session
   useEffect(() => {
     if (isOpen && itemId) {
@@ -180,7 +192,12 @@ export default function HandoverQRModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="handover-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+    >
       <div className="relative w-full max-w-lg bg-white rounded-3xl border border-[#E5E9E4] shadow-elevated overflow-hidden max-h-[90vh] flex flex-col">
         {/* Top Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E9E4] bg-[#F8FAF7]">
@@ -189,7 +206,7 @@ export default function HandoverQRModal({
               <QrCode className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[#1A201C]">
+              <h3 id="handover-modal-title" className="text-sm font-bold text-[#1A201C]">
                 MoMo Escrow & In-Person Handover
               </h3>
               <p className="text-[11px] text-[#65736B]">
@@ -313,7 +330,7 @@ export default function HandoverQRModal({
                     {qrDataUrl ? (
                       <img
                         src={qrDataUrl}
-                        alt="Handover QR Code"
+                        alt="Dynamic QR code for in-person handover check-in and instant escrow release"
                         className="w-56 h-56 mx-auto rounded-xl"
                       />
                     ) : (

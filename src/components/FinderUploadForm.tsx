@@ -51,6 +51,7 @@ export default function FinderUploadForm() {
 
   // Status
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -92,6 +93,12 @@ export default function FinderUploadForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+
+    if (!termsAgreed) {
+      setErrorMsg("You must agree to the Terms of Service and verify legal authorization before submitting.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -437,7 +444,7 @@ export default function FinderUploadForm() {
                   <div className="mt-4 relative rounded-xl overflow-hidden border border-[#E5E9E4] max-h-48 flex items-center justify-center bg-gray-50">
                     <img
                       src={imagePreviewUrl}
-                      alt="Upload Preview"
+                      alt="Zero-trust blurred preview of uploaded document"
                       className="max-h-48 object-contain filter blur-[4px]"
                     />
                     <div className="absolute inset-0 bg-[#1B4D3E]/20 flex items-center justify-center text-white text-xs font-semibold gap-1.5">
@@ -499,6 +506,25 @@ export default function FinderUploadForm() {
               </p>
             </div>
 
+            {/* Mandatory Legal & Terms Checkbox */}
+            <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="finder-terms-checkbox"
+                required
+                checked={termsAgreed}
+                onChange={(e) => setTermsAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#1B4D3E] focus:ring-[#1B4D3E]/30 accent-[#1B4D3E] cursor-pointer"
+              />
+              <label htmlFor="finder-terms-checkbox" className="text-xs text-[#1A201C] cursor-pointer leading-relaxed">
+                I agree to the{" "}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1B4D3E] underline hover:text-[#153D31]">
+                  Terms of Service
+                </a>{" "}
+                and verify that I am legally authorized to post this item.
+              </label>
+            </div>
+
             <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
@@ -511,8 +537,8 @@ export default function FinderUploadForm() {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="btn-primary min-w-[160px]"
+                disabled={isSubmitting || !termsAgreed}
+                className="btn-primary min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <span>Processing Zero-Trust...</span>

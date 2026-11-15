@@ -78,6 +78,17 @@ export default function VerificationModal({
     }
   }, [isOpen, item]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !item) return null;
 
   const handleChallengeSubmit = async (e: React.FormEvent) => {
@@ -145,7 +156,12 @@ export default function VerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="verification-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+    >
       <div className="relative w-full max-w-xl bg-white rounded-3xl border border-[#E5E9E4] shadow-elevated overflow-hidden max-h-[90vh] flex flex-col">
         {/* Modal Top Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E9E4] bg-[#F8FAF7]">
@@ -154,7 +170,7 @@ export default function VerificationModal({
               <ShieldCheck className="w-4 h-4 text-[#10B981]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[#1A201C]">
+              <h3 id="verification-modal-title" className="text-sm font-bold text-[#1A201C]">
                 Dual Verification (Option C)
               </h3>
               <p className="text-[11px] text-[#65736B]">
@@ -224,7 +240,7 @@ export default function VerificationModal({
                 <div className="rounded-2xl overflow-hidden border border-[#E5E9E4] bg-gray-50 flex items-center justify-center max-h-56">
                   <img
                     src={unlockedDetails?.privateRawUrl || item.publicBlurredUrl}
-                    alt="Unlocked Item"
+                    alt={`Unlocked original unredacted photograph of ${item.title}`}
                     className="max-h-56 object-contain"
                   />
                 </div>
@@ -376,7 +392,7 @@ export default function VerificationModal({
                       {item.publicBlurredUrl ? (
                         <img
                           src={item.publicBlurredUrl}
-                          alt="Blurred Preview"
+                          alt={`Zero-trust blurred photograph preview of ${item.title}`}
                           className="w-full h-full object-cover filter blur-[4px]"
                         />
                       ) : (

@@ -40,6 +40,7 @@ export default function ClaimerBountyForm() {
 
   // Status
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -72,6 +73,12 @@ export default function ClaimerBountyForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+
+    if (!termsAgreed) {
+      setErrorMsg("You must agree to the Terms of Service and verify legal authorization before submitting.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -342,11 +349,30 @@ export default function ClaimerBountyForm() {
           />
         </div>
 
+        {/* Mandatory Legal & Terms Checkbox */}
+        <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="claimer-terms-checkbox"
+            required
+            checked={termsAgreed}
+            onChange={(e) => setTermsAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#1B4D3E] focus:ring-[#1B4D3E]/30 accent-[#1B4D3E] cursor-pointer"
+          />
+          <label htmlFor="claimer-terms-checkbox" className="text-xs text-[#1A201C] cursor-pointer leading-relaxed">
+            I agree to the{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1B4D3E] underline hover:text-[#153D31]">
+              Terms of Service
+            </a>{" "}
+            and verify that I am legally authorized to post this item.
+          </label>
+        </div>
+
         <div className="pt-2">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="w-full btn-primary py-3"
+            disabled={isSubmitting || !termsAgreed}
+            className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <span>Publishing Bounty...</span>

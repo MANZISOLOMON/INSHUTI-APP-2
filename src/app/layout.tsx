@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "Lost & Found Registry | Secure Community Property Registry",
@@ -50,6 +51,9 @@ export default function RootLayout({
 
         {/* Global Footer */}
         <Footer />
+
+        {/* Essential Cookie & Local Storage Consent */}
+        <CookieBanner />
       </body>
     </html>
   );

@@ -33,7 +33,6 @@ The living document that keeps your AI tool caught up across sessions.
   - Built Dual Verification Engine (`/api/verify/route.ts`) handling Option A (SHA-256 hashed challenge verification) and Option B (Visual photo comparison approval). Verified that passing updates item status to `CLAIMED`, unlocks raw images and finder phone numbers, and starts the 48-hour handover grace timer.
   - Created interactive `VerificationModal.tsx` and wired it into `ItemCatalog.tsx` across the entire application.
   - Verified end-to-end with automated test generating a 100% cross-match and sending cellular SMS alerts.
-
 * **2026-11-13 (Phase 5 Completed):**
   - **MoMo Escrow Locker API (`/api/escrow/lock`):** Validates `verification.isVerified === true` before locking funds. Enforces min 500 RWF / max 500,000 RWF boundaries and auto-appends 100 RWF flat platform fee for SMS gateway costs. Creates `EscrowTransaction` (status: `LOCKED`), generates dynamic `HandoverSession` with `qrToken` and 6-digit backup code, and dispatches SMS alert to finder.
   - **MTN MoMo / Airtel Money Integration (`/lib/momo.ts`):** Implemented collection, payout disbursement, and refund helpers with live credentials support and sandbox/mock fallback mode.
@@ -44,46 +43,26 @@ The living document that keeps your AI tool caught up across sessions.
     2. *Listing Moderation Queue:* Displays all registered items with toggleable unblurred raw photo inspection (admin-only signed view), dispute flags, and deletion/ban actions.
     3. *Escrow Ledger Overview:* Summary cards for Total Locked (RWF), Total Released (RWF), Total Platform Micro-Fees (RWF), and full transaction audit table.
   - **Admin APIs:** Implemented `/api/admin/overview`, `/api/admin/escrow-override`, and `/api/admin/items`.
-  - **Refactored Match Engine:** Isolated matching logic in `/lib/match-engine.ts` for clean Next.js App Router route separation.
   - **Verified End-to-End & Built:** Validated complete flow (Verify -> Lock Escrow -> 6-Digit Check-in -> Release Payout -> Admin Refund) with 100% success. Production build (`next build --webpack`) verified with zero TypeScript or packaging errors.
-
-* **2026-11-13 (Phase 6 Completed & Deployed):**
-  - **Zero-Trust & PII Leak Audit:** Centralized validation in `/lib/validations.ts` using strict Zod schemas (`ItemCreateSchema`, `VerifyClaimSchema`, `EscrowLockSchema`, `EscrowReleaseSchema`, `AdminEscrowOverrideSchema`, `AdminItemPatchSchema`). Sanitized all API responses to ensure `privateRawUrl`, `secretAnswer`, `qrToken`, and phone numbers are completely shielded from unauthenticated/public access.
-  - **Production Firebase Security Rules (`firestore.rules` & `storage.rules`):**
-    - `firestore.rules`: Authored with query-aligned public reads on `ACTIVE` items, RBAC protection, immutable ID/timestamp checks, and complete client write denial on `handoverSessions`, `escrowTransactions`, and `smsNotifications`.
-    - `storage.rules`: Allow public read on `/items-public-blurred/**`, block direct client read/write on `/items-private-raw/**` (serving raw originals strictly via short-lived signed URLs after verification), and route all writes through the serverless Sharp pipeline.
-  - **Automated Lifecycle Cron Job (`/api/cron/lifecycle/route.ts` & `vercel.json`):**
-    - Built protected cron endpoint secured by `CRON_SECRET` and `ADMIN_SECRET_KEY`.
-    - Auto-archives items where `expiresAt <= now` by marking `status: "EXPIRED"`.
-    - Auto-flags items where `status === "CLAIMED"` and `claimedAt >= 48 hours` as `DISPUTED` and sends cellular SMS alerts.
-    - Configured Vercel Cron in `vercel.json` to execute every 6 hours (`0 */6 * * *`).
-  - **PWA & Production Polish:**
-    - Generated high-resolution 192x192 and 512x512 PNG icons alongside SVG icons.
-    - Built branded `public/offline.html` fallback screen and updated service worker (`public/sw.js`) to handle offline navigation gracefully.
-    - Added iOS Safari `apple-touch-icon` and standalone meta tags in `src/app/layout.tsx`.
-    - Compiled with `npm run build` (`next build --webpack`) with 0 errors across all 14 routes.
-  - **Git & GitHub Remote:**
-    - Initialized git repository, committed all source code, rules, and configs.
-    - Pushed to GitHub remote repository: `https://github.com/MANZISOLOMON/INSHUTI-APP-2` (branch `main`).
+* **2026-11-14 (Phase 6 Completed & Deployed):**
+  - **Zero-Trust & PII Leak Audit:** Centralized validation in `/lib/validations.ts` using strict Zod schemas. Sanitized all API responses to ensure `privateRawUrl`, `secretAnswer`, `qrToken`, and phone numbers are completely shielded from unauthenticated access.
+  - **Production Firebase Security Rules (`firestore.rules` & `storage.rules`):** Authored query-aligned public reads on `ACTIVE` items, RBAC protection, and client write denial on escrow and session collections.
+  - **Automated Lifecycle Cron Job (`/api/cron/lifecycle/route.ts` & `vercel.json`):** Built protected cron endpoint running daily on Vercel Hobby tier. Auto-archives items where `expiresAt <= now` and flags 48h overdue items as `DISPUTED`.
+  - **PWA & Production Polish:** Offline fallback (`public/offline.html`), high-res icons (192px/512px), iOS touch icons, and clean build.
   - **Vercel Cloud Production Infrastructure (Active & Live):**
-    - **Project ID:** `prj_gxunFtz3dC55wNJV0CrkREP1ar3T` (`lost-it-found-it`)
-    - **Deployment ID:** `dpl_7JAwUNhTerZ47PHd3ByyYhzyohwk`
-    - **Team ID:** `team_iNXt1PoXbKsNCU65tldaYY2E` (`iznam`)
-    - **Node Version:** `26.x`
-    - **SSO Protection:** Disabled for public accessibility.
-    - **Environment Variables Provisioned:** 10 variables (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_PROJECT_ID`, `MOMO_TARGET_ENV`, `ADMIN_SECRET_KEY`, `CRON_SECRET`) active in `production`, `preview`, and `development`.
-    - **Verified Production URLs (Tested HTTP 200 OK):**
-      - Primary: `https://lost-it-found-it-rwanda.vercel.app`
-      - Staging/Beta: `https://lost-it-found-it-beta.vercel.app`
-      - Direct Deployment: `https://lost-it-found-k5bi061ut-iznam.vercel.app`
-    - **Verified Production Endpoints:**
-      - `/` (Homepage feed) -> 200 OK
-      - `/search` (Catalog & filters) -> 200 OK
-      - `/report-found` (Finder upload wizard) -> 200 OK
-      - `/post-lost` (Claimer bounty form) -> 200 OK
-      - `/admin` (Moderation & dispute ledger) -> 200 OK
-      - `/api/items` (Zero-trust search API) -> 200 OK (Returning live sanitized items)
-      - `/api/cron/lifecycle` (Automated sweep) -> 401 Unauthorized without passkey / 200 OK with Bearer passkey
+    - Project: `lost-it-found-it` (`prj_gxunFtz3dC55wNJV0CrkREP1ar3T`)
+    - Team: `iznam` (`team_iNXt1PoXbKsNCU65tldaYY2E`)
+    - Primary Domain: `https://lost-it-found-it-rwanda.vercel.app`
+    - Staging Domain: `https://lost-it-found-it-beta.vercel.app`
+* **2026-11-15 (Serverless Storage Resilience & API Fix):**
+  - **Root Cause Fix for 'Failed to fetch items':** Resolved Vercel AWS Lambda read-only filesystem crash (`ENOENT: mkdir '/var/task/.data'`) by routing all local persistence in `items-store.ts`, `escrow-store.ts`, `sms.ts`, and `match-engine.ts` to `os.tmpdir()` (`/tmp`) on serverless runtime and removing directory creation calls on read operations.
+  - **ADC Unhandled Rejection Fix:** Attached `.catch(() => {})` in `timeout-helper.ts` to prevent late Google Cloud ADC promise rejections from causing Node 26 process crashes (exit code 128).
+  - **Credential Guard:** Added `isFirebaseAdminConfigured()` checks before invoking `adminDb` calls. Embedded default fallback seed items so cold-start serverless instances return data immediately with zero downtime.
+* **2026-11-15 (Frontend UX Refinements):**
+  - **PWA Installation Banner:** Replaced floating bottom-right box with an elegant, dismissible top banner (`ServiceWorkerRegister.tsx`) and added an interactive PWA install trigger to `Footer.tsx`.
+  - **Consumer-Facing Homepage:** Replaced developer-facing architecture block with an intuitive 'How It Works in 3 Steps' section (Upload Securely -> Verify Ownership -> Meet & Release via QR) with clean icons and benefit badges.
+  - **Enhanced Search Bar:** Added dynamic Sector dropdown linked to the selected District (`rwanda-locations.ts`), fast 1-click Kigali district and sector shortcut pills (Gasabo, Kicukiro, Nyarugenge, Remera, Kimironko, Gisozi, Nyamirambo), and instant filter clear badges.
+  - **Live Production Deployment:** Deployed commit `ea219b0` (`dpl_4cHtFRmBTYhA4QVf25uJRTPfuQmi`) to `https://lost-it-found-it-rwanda.vercel.app` and `https://lost-it-found-it-beta.vercel.app`. Verified `200 OK` on all routes and tested live filtered API queries.
 
 ## Current Milestone Status
 * **Phase 1: Completed** (Environment, Strict Light Theme, PWA Foundation, Main Shell, Navbar, Footer)
@@ -92,3 +71,4 @@ The living document that keeps your AI tool caught up across sessions.
 * **Phase 4: Completed** (Auto-Matching Engine, SMS Fallback Gateway, Dual Verification Option C Modal & API, 48-hour Handover Timer Trigger)
 * **Phase 5: Completed** (MoMo Escrow Locker, QR Handover Check-In & Camera Scanner, Admin Moderation & Dispute Dashboard)
 * **Phase 6: Completed** (Pre-Launch Security Audit, Zod Validation, Hardened Security Rules, Lifecycle Cron Automation, PWA Offline Polish, Git & Vercel Provisioning)
+* **UX Polish & Live Production: Live & Verified** (Serverless read-only fs fix, dismissible top PWA banner, consumer-facing 3-step guide, and dynamic Kigali district/sector filtering)
