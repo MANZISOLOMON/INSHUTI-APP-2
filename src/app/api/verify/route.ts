@@ -207,20 +207,61 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. OPTION B: Visual Photo Compare
+    // 2. OPTION B: Visual Photo Compare & Written Proof Inspection
     if (option === "VISUAL") {
+      const visualNote = body.visualNote || body.notes || body.answer || "";
+      if (!visualNote || typeof visualNote !== "string" || visualNote.trim().length < 3) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Please provide written proof details (e.g., middle names, issuing date, distinct marks) for the finder to inspect.",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Record visual proof details on verification document
+      await updateItemVerification(itemId, {
+        visualProofText: visualNote.trim(),
+        visualReviewPending: true,
+      });
+
+      const rawItem = item as unknown as { contactPhone?: string };
+
+      // Dispatch SMS alert to finder
+      if (rawItem?.contactPhone) {
+        await sendSmsAlert({
+          to: rawItem.contactPhone,
+          message: `Inshuti Found Alert: A claimer submitted visual proof for your item '${item.title}': "${visualNote.trim().slice(0, 45)}...". Please review to approve handover.`,
+          type: "HANDOVER_REMINDER",
+          userId: itemId,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        verified: false,
+        reviewPending: true,
+        method: "VISUAL",
+        message: "Visual proof details submitted to the finder! An automated SMS alert was dispatched. Once approved, the handover details will unlock.",
+      });
+    }
+
+    // 3. FINDER OR ADMIN APPROVAL OF OPTION B HANDOVER
+    if (option === "APPROVE") {
       const signedRawUrl = await generateSignedRawUrl(itemId, 15);
 
       const updateResult = await updateItemVerification(
         itemId,
         {
           visualPassed: true,
+          visualReviewPending: false,
           isVerified: true,
-          verifiedBy: claimerId || "verified_claimer",
+          verifiedBy: claimerId || "approved_by_finder",
           failedAttempts: 0,
           isLocked: false,
         },
-        true
+        true // Shifts status to 'CLAIMED' and starts 48h handover timer
       );
 
       const rawItem = updateResult.item as unknown as { contactPhone?: string };
@@ -228,7 +269,7 @@ export async function POST(request: NextRequest) {
       if (rawItem?.contactPhone) {
         await sendSmsAlert({
           to: rawItem.contactPhone,
-          message: `Inshuti Found Alert: Visual comparison requested and approved for '${item.title}'. 48-hour handover window is active.`,
+          message: `Inshuti Found Alert: You approved handover for '${item.title}'. 48-hour handover timer is active.`,
           type: "HANDOVER_REMINDER",
           userId: itemId,
         });
@@ -237,8 +278,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         verified: true,
-        method: "VISUAL",
-        message: "Visual photo verification approved! Finder contact unlocked for 15 minutes.",
+        method: "APPROVE",
+        message: "Handover approved! 48-hour handover window is now active.",
         unlockedDetails: {
           privateRawUrl: signedRawUrl,
           meetingPoint: item.meetingPoint,

@@ -77,6 +77,8 @@ export interface Verification {
   failedAttempts?: number;   // Brute-force counter for Option A (locked after 3)
   isLocked?: boolean;        // Locked if failedAttempts >= 3
   visualPassed: boolean;     // Dual Verification Option B: Photo comparison pass
+  visualProofText?: string;  // Written proof submitted by claimer (Option B)
+  visualReviewPending?: boolean; // True while waiting for finder review
   isVerified: boolean;       // True if EITHER Option A OR Option B passed
   verifiedAt?: FirestoreDate | null;
   verifiedBy?: string | null; // Claimer UID
@@ -90,6 +92,8 @@ export interface HandoverSession {
   itemId: string;
   qrToken: string;           // Cryptographically dynamic one-time token for physical check-in
   status: HandoverStatus;
+  timerExtended?: boolean;   // True if 24-hour extension was granted
+  extendedAt?: FirestoreDate | null; // Timestamp of extension
   scannedAt?: FirestoreDate | null;
   expiresAt: FirestoreDate;
 }

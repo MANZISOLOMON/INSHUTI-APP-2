@@ -162,10 +162,6 @@ export default function Footer() {
             <Link href="/settings" className="hover:text-[#1B4D3E] transition-colors">
               Data Rights
             </Link>
-            <span>•</span>
-            <Link href="/admin" className="hover:text-[#1B4D3E] transition-colors">
-              Admin Portal
-            </Link>
           </div>
         </div>
       </div>

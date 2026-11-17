@@ -51,11 +51,15 @@ export default function VerificationModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [unlockedDetails, setUnlockedDetails] = useState<UnlockedDetails | null>(null);
+  const [reviewPending, setReviewPending] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && item) {
       setErrorMsg(null);
       setIsVerified(false);
+      setReviewPending(false);
+      setReviewMessage(null);
       setAnswerInput("");
       setVisualNotes("");
       setUnlockedDetails(null);
@@ -145,9 +149,14 @@ export default function VerificationModal({
         throw new Error(data.error || "Visual verification failed.");
       }
 
-      setIsVerified(true);
-      setUnlockedDetails(data.unlockedDetails);
-      if (onVerificationSuccess) onVerificationSuccess(data.unlockedDetails);
+      if (data.reviewPending) {
+        setReviewPending(true);
+        setReviewMessage(data.message || "Written proof details submitted to the finder! An automated SMS alert was dispatched. Once approved, handover details will unlock.");
+      } else if (data.verified) {
+        setIsVerified(true);
+        setUnlockedDetails(data.unlockedDetails);
+        if (onVerificationSuccess) onVerificationSuccess(data.unlockedDetails);
+      }
     } catch (err) {
       setErrorMsg((err as Error).message);
     } finally {
@@ -378,58 +387,85 @@ export default function VerificationModal({
 
               {/* OPTION B: VISUAL COMPARE */}
               {activeTab === "VISUAL" && (
-                <form onSubmit={handleVisualSubmit} className="space-y-4 animate-fade-in">
-                  <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-[#1A201C] flex items-center gap-1.5">
-                        <EyeOff className="w-4 h-4 text-[#1B4D3E]" />
-                        Zero-Trust Blurred Preview:
-                      </span>
-                      <span className="badge-escrow">Visual Compare</span>
+                reviewPending ? (
+                  <div className="p-5 rounded-2xl bg-[#EBF3EF] border border-[#DEEBE5] text-center space-y-3 animate-fade-in">
+                    <div className="w-12 h-12 rounded-full bg-[#1B4D3E] text-white flex items-center justify-center mx-auto shadow-xs">
+                      <Clock className="w-6 h-6 text-emerald-300 animate-pulse" />
                     </div>
-
-                    <div className="relative h-32 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
-                      {item.publicBlurredUrl ? (
-                        <img
-                          src={item.publicBlurredUrl}
-                          alt={`Zero-trust blurred photograph preview of ${item.title}`}
-                          className="w-full h-full object-cover filter blur-[4px]"
-                        />
-                      ) : (
-                        <span className="text-xs text-[#65736B]">No image available</span>
-                      )}
-                      <div className="absolute inset-0 bg-[#1B4D3E]/10 flex items-center justify-center text-xs font-semibold text-white drop-shadow">
-                        Inspect Outline & Silhouette
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-[#1A201C]">
+                        Visual Proof Submitted for Review
+                      </h4>
+                      <p className="text-xs text-[#65736B] leading-relaxed">
+                        {reviewMessage}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white border border-[#E5E9E4] text-left text-xs space-y-1">
+                      <span className="font-bold text-[#1B4D3E] block">Your Submitted Evidence:</span>
+                      <p className="text-[#1A201C] italic">&quot;{visualNotes}&quot;</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReviewPending(false)}
+                      className="text-xs text-[#1B4D3E] hover:underline font-semibold cursor-pointer"
+                    >
+                      Edit Submitted Evidence
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleVisualSubmit} className="space-y-4 animate-fade-in">
+                    <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-[#1A201C] flex items-center gap-1.5">
+                          <EyeOff className="w-4 h-4 text-[#1B4D3E]" />
+                          Zero-Trust Blurred Preview:
+                        </span>
+                        <span className="badge-escrow">Visual Compare</span>
                       </div>
+
+                      <div className="relative h-32 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {item.publicBlurredUrl ? (
+                          <img
+                            src={item.publicBlurredUrl}
+                            alt={`Zero-trust blurred photograph preview of ${item.title}`}
+                            className="w-full h-full object-cover filter blur-[4px]"
+                          />
+                        ) : (
+                          <span className="text-xs text-[#65736B]">No image available</span>
+                        )}
+                        <div className="absolute inset-0 bg-[#1B4D3E]/10 flex items-center justify-center text-xs font-semibold text-white drop-shadow">
+                          Inspect Outline & Silhouette
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-[#65736B]">
+                        If you cannot answer the secret question, submit written proof details (e.g., middle names, issuing date, distinct marks) for the finder to review.
+                      </p>
                     </div>
 
-                    <p className="text-[11px] text-[#65736B]">
-                      If you cannot answer the secret question, describe unique visual details (e.g. scratch, sticker, or photo date) to confirm visual match.
-                    </p>
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-[#1A201C]">
+                        Visual Proof & Distinguishing Details
+                      </label>
+                      <textarea
+                        rows={3}
+                        required
+                        value={visualNotes}
+                        onChange={(e) => setVisualNotes(e.target.value)}
+                        placeholder="e.g. My middle name is Gasana, issued on March 2023, with a scratch on the bottom-right corner..."
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
+                      />
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[#1A201C]">
-                      Visual Evidence & Matching Notes
-                    </label>
-                    <textarea
-                      rows={3}
-                      required
-                      value={visualNotes}
-                      onChange={(e) => setVisualNotes(e.target.value)}
-                      placeholder="e.g. I recognize the brown leather edge and my photo taken in 2023..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full btn-primary py-2.5"
-                  >
-                    {loading ? "Confirming Visual Match..." : "Confirm Visual Match (Option B)"}
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full btn-primary py-2.5 cursor-pointer"
+                    >
+                      {loading ? "Submitting Proof to Finder..." : "Submit Visual Proof (Option B)"}
+                    </button>
+                  </form>
+                )
               )}
             </div>
           )}

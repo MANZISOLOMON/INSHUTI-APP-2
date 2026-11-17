@@ -42,12 +42,12 @@ interface AdminStats {
 }
 
 export default function AdminDashboardPage() {
-  const [adminKey, setAdminKey] = useState<string>("rwanda-admin-2026");
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [passkeyInput, setPasskeyInput] = useState<string>("rwanda-admin-2026");
+  const [adminKey, setAdminKey] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [passkeyInput, setPasskeyInput] = useState<string>("");
 
   const [activeTab, setActiveTab] = useState<"DISPUTES" | "MODERATION" | "LEDGER">("DISPUTES");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
@@ -65,6 +65,11 @@ export default function AdminDashboardPage() {
   const [adminNote, setAdminNote] = useState<string>("");
 
   const fetchAdminData = async (key: string = adminKey) => {
+    if (!key) {
+      setIsAuthenticated(false);
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     try {
@@ -73,10 +78,16 @@ export default function AdminDashboardPage() {
 
       if (!res.ok || !data.success) {
         setIsAuthenticated(false);
+        sessionStorage.removeItem("admin_session_key");
         throw new Error(data.error || "Authentication failed. Invalid Admin Passkey.");
       }
 
       setIsAuthenticated(true);
+      setAdminKey(key);
+      try {
+        sessionStorage.setItem("admin_session_key", key);
+      } catch {}
+
       setStats(data.stats);
       setDisputedList(data.disputedAndOverdue || []);
       setModerationItems(data.moderationQueue || []);
@@ -89,7 +100,13 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    fetchAdminData(adminKey);
+    try {
+      const savedKey = sessionStorage.getItem("admin_session_key");
+      if (savedKey) {
+        setAdminKey(savedKey);
+        fetchAdminData(savedKey);
+      }
+    } catch {}
   }, []);
 
   const handleAuthSubmit = (e: React.FormEvent) => {
@@ -271,6 +288,18 @@ export default function AdminDashboardPage() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#1B4D3E]" : ""}`} />
             <span>Refresh Ledger</span>
+          </button>
+          <button
+            onClick={() => {
+              setIsAuthenticated(false);
+              setAdminKey("");
+              sessionStorage.removeItem("admin_session_key");
+            }}
+            className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 hover:bg-red-100 flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Lock Admin Session"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Lock Portal</span>
           </button>
         </div>
       </div>

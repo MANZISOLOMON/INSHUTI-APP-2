@@ -9,19 +9,25 @@ import {
   CheckCircle2, 
   Lock, 
   EyeOff, 
-  ArrowRight,
-  Layers,
-  FileText,
-  CreditCard,
-  KeyRound,
-  RefreshCw,
-  AlertCircle,
-  QrCode,
-  X,
-  Compass
+  ArrowRight, 
+  Layers, 
+  FileText, 
+  CreditCard, 
+  KeyRound, 
+  RefreshCw, 
+  AlertCircle, 
+  QrCode, 
+  X, 
+  Compass, 
+  LocateFixed, 
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 import { ALL_DISTRICTS, KIGALI_DISTRICTS, getSectorsForDistrict } from "@/lib/rwanda-locations";
 import { Item } from "@/types/database";
+import { detectCurrentRwandaLocation } from "@/lib/geolocation";
+import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import VerificationModal from "@/components/VerificationModal";
 import HandoverQRModal from "@/components/HandoverQRModal";
 
@@ -35,6 +41,9 @@ const POPULAR_KIGALI_SHORTCUTS = [
 ];
 
 export default function ItemCatalog({ initialType = "ALL" }: { initialType?: string }) {
+  const { t } = useLanguage();
+  const { requireAuth } = useAuth();
+
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +63,17 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Location Auto-Detect State
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationFeedback, setLocationFeedback] = useState<string | null>(null);
+
   const categories = [
-    { id: "ALL", label: "All Items", icon: Layers },
-    { id: "NATIONAL_ID", label: "National ID", icon: FileText },
-    { id: "DRIVING_LICENSE", label: "Driver's License", icon: CreditCard },
-    { id: "PASSPORT", label: "Passport", icon: Shield },
-    { id: "WALLET", label: "Wallet", icon: CreditCard },
-    { id: "KEYS", label: "Keys", icon: KeyRound },
+    { id: "ALL", label: t.catAll, icon: Layers },
+    { id: "NATIONAL_ID", label: t.catNationalId, icon: FileText },
+    { id: "DRIVING_LICENSE", label: t.catDriverLicense, icon: CreditCard },
+    { id: "PASSPORT", label: t.catPassport, icon: Shield },
+    { id: "WALLET", label: t.catWallet, icon: CreditCard },
+    { id: "KEYS", label: t.catKeys, icon: KeyRound },
   ];
 
   // Dynamically compute available sectors for currently selected district
@@ -108,7 +121,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
 
   const handleDistrictChange = (newDistrict: string) => {
     setSelectedDistrict(newDistrict);
-    setSelectedSector(""); // reset sector when district changes
+    setSelectedSector("");
   };
 
   const handleQuickKigaliDistrict = (districtName: string) => {
@@ -134,6 +147,23 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
   const clearLocationFilters = () => {
     setSelectedDistrict("");
     setSelectedSector("");
+    setLocationFeedback(null);
+  };
+
+  const handleDetectLocation = async () => {
+    setDetectingLocation(true);
+    setLocationFeedback(null);
+    try {
+      const loc = await detectCurrentRwandaLocation();
+      setSelectedDistrict(loc.district);
+      setSelectedSector(loc.sector);
+      setLocationFeedback(`${loc.district} › ${loc.sector}`);
+      setTimeout(() => setLocationFeedback(null), 4000);
+    } catch (err) {
+      setError(`Location detect failed: ${(err as Error).message}`);
+    } finally {
+      setDetectingLocation(false);
+    }
   };
 
   return (
@@ -144,14 +174,14 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
         <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-[#E5E9E4]">
           <div className="inline-flex p-1 rounded-full bg-[#F8FAF7] border border-[#E5E9E4]">
             {[
-              { id: "ALL", label: "All Listings" },
-              { id: "FOUND", label: "Found Items" },
-              { id: "LOST", label: "Lost Bounties" },
+              { id: "ALL", label: t.allListings },
+              { id: "FOUND", label: t.foundItems },
+              { id: "LOST", label: t.lostBounties },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setSelectedType(tab.id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   selectedType === tab.id
                     ? "bg-[#1B4D3E] text-white shadow-sm"
                     : "text-[#65736B] hover:text-[#1A201C]"
@@ -178,7 +208,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search keyword, document title, or masked ref..."
+              placeholder={t.searchPlaceholder}
               className="w-full pl-10 pr-4 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] placeholder:text-[#65736B] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 focus:border-[#1B4D3E] transition-all"
             />
           </div>
@@ -191,7 +221,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               onChange={(e) => handleDistrictChange(e.target.value)}
               className="w-full pl-9 pr-8 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 transition-all cursor-pointer appearance-none truncate"
             >
-              <option value="">All Rwanda Districts</option>
+              <option value="">{t.allDistricts}</option>
               <optgroup label="── Kigali City ──">
                 {KIGALI_DISTRICTS.map((d) => (
                   <option key={d} value={d}>
@@ -245,11 +275,30 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
           </div>
         </div>
 
-        {/* Quick Kigali Location Shortcuts */}
+        {/* Location Auto-Detect & Quick Shortcuts */}
         <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
-          <span className="text-[#65736B] font-medium mr-1 flex items-center gap-1">
+          {/* One-Tap Geolocation Auto-Detect Button */}
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={detectingLocation}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] border border-[#DEEBE5] transition-all cursor-pointer mr-1"
+            title="Detect location automatically via GPS"
+          >
+            <LocateFixed className={`w-3.5 h-3.5 ${detectingLocation ? "animate-spin text-[#1B4D3E]" : "text-[#10B981]"}`} />
+            <span>{detectingLocation ? t.detectingLocation : t.detectLocation}</span>
+          </button>
+
+          {locationFeedback && (
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
+              {locationFeedback}
+            </span>
+          )}
+
+          <span className="text-[#65736B] font-medium mx-1 flex items-center gap-1">
             <MapPin className="w-3 h-3 text-[#1B4D3E]" />
-            <span>Kigali Quick Filters:</span>
+            <span>Kigali:</span>
           </span>
 
           {/* Kigali District Buttons */}
@@ -296,13 +345,13 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors ml-auto cursor-pointer"
             >
               <X className="w-3 h-3" />
-              <span>Clear Filter</span>
+              <span>{t.resetFilters}</span>
             </button>
           )}
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-2 border-t border-[#F8FAF7]">
+        {/* Category Pills Row */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 no-scrollbar">
           {categories.map((cat) => {
             const Icon = cat.icon;
             const isSelected = selectedCategory === cat.id;
@@ -310,10 +359,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[#1B4D3E] text-white shadow-sm"
-                    : "bg-[#F8FAF7] text-[#65736B] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] border border-[#E5E9E4]"
+                    ? "bg-[#1B4D3E] text-white shadow-xs"
+                    : "bg-[#F8FAF7] text-[#65736B] border border-[#E5E9E4] hover:border-[#1B4D3E] hover:text-[#1A201C]"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -329,10 +378,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
         <div>
           <h2 className="text-lg font-bold text-[#1A201C]">
             {selectedType === "FOUND" 
-              ? "Found Items in Registry" 
+              ? t.foundItems 
               : selectedType === "LOST" 
-              ? "Lost Property Bounties" 
-              : "All Registry Items"}
+              ? t.lostBounties 
+              : t.allListings}
           </h2>
           <p className="text-xs text-[#65736B]">
             Showing {items.length} verified listings across Rwanda
@@ -347,7 +396,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
             </span>
             <button
               onClick={clearLocationFilters}
-              className="text-[#65736B] hover:text-[#1A201C]"
+              className="text-[#65736B] hover:text-[#1A201C] cursor-pointer"
               title="Clear location filter"
             >
               <X className="w-3 h-3" />
@@ -401,10 +450,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               }}
               className="btn-outline text-xs cursor-pointer"
             >
-              Reset Filters
+              {t.resetFilters}
             </button>
             <a href="/report-found" className="btn-primary text-xs">
-              Report a Found Item
+              {t.reportFoundBtn}
             </a>
           </div>
         </div>
@@ -460,7 +509,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                   <div className="mb-4 p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <EyeOff className="w-3.5 h-3.5 text-[#65736B]" />
-                      <span className="text-xs text-[#65736B] font-medium">Masked ID:</span>
+                      <span className="text-xs text-[#65736B] font-medium">{t.maskedIdLabel}:</span>
                     </div>
                     <span className="font-mono text-xs font-bold text-[#1B4D3E] tracking-wider bg-white px-2 py-0.5 rounded border border-[#E5E9E4]">
                       {item.maskedDocNumber}
@@ -482,14 +531,14 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                         <Lock className="w-4 h-4" />
                       </div>
                       <p className="text-[11px] font-medium text-[#1A201C]">
-                        Protected Preview
+                        {t.protectedPreview}
                       </p>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-[#1B4D3E]/10 backdrop-blur-[2px] flex items-center justify-center">
                     <span className="px-2.5 py-1 rounded-full bg-white/90 text-[#1B4D3E] text-[10px] font-bold border border-[#DEEBE5] shadow-xs flex items-center gap-1">
                       <Lock className="w-3 h-3 text-[#10B981]" />
-                      Dual Verification Required
+                      {t.dualVerificationRequired}
                     </span>
                   </div>
                 </div>
@@ -504,7 +553,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                   </div>
                   {item.meetingPoint && (
                     <p className="text-[11px] text-[#65736B] pl-5 italic line-clamp-1">
-                      Handover: {item.meetingPoint}
+                      {t.handoverSpot}: {item.meetingPoint}
                     </p>
                   )}
                 </div>
@@ -521,20 +570,36 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-[#10B981] text-white text-xs font-semibold hover:bg-[#059669] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                   >
                     <QrCode className="w-3.5 h-3.5" />
-                    <span>MoMo Escrow & Handover QR</span>
+                    <span>{t.momoEscrowHandover}</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => {
-                      setSelectedItemForModal(item);
-                      setModalOpen(true);
+                      requireAuth(() => {
+                        setSelectedItemForModal(item);
+                        setModalOpen(true);
+                      });
                     }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                   >
-                    <span>{isFound ? "Claim & Verify Ownership" : "Provide Match Lead"}</span>
+                    <span>{isFound ? t.claimAndVerify : t.provideMatchLead}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
+
+                {/* WhatsApp Quick Share Button */}
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `🚨 Lost & Found Rwanda Alert!\n📦 Item: ${item.title}\n🔒 Reference: ${item.maskedDocNumber || item.category.replace("_", " ")}\n📍 Location: ${item.sector}, ${item.district}\n🛡️ Verify or claim securely: https://lost-it-found-it-rwanda.vercel.app/search?query=${encodeURIComponent(item.id)}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-[#E8F5E9] text-[#1B4D3E] hover:bg-[#C8E6C9] text-xs font-semibold transition-all border border-[#C8E6C9] cursor-pointer"
+                  title="Share alert into WhatsApp groups"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-[#2E7D32]" />
+                  <span>{t.shareWhatsApp}</span>
+                </a>
               </div>
             </div>
           );

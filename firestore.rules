@@ -113,7 +113,8 @@ service cloud.firestore {
     function isValidVerification(data) {
       return hasOnlyAllowedFields(data, [
           'id', 'itemId', 'secretPrompt', 'secretAnswerHash',
-          'failedAttempts', 'isLocked', 'visualPassed', 'isVerified', 'verifiedAt', 'verifiedBy'
+          'failedAttempts', 'isLocked', 'visualPassed', 'visualProofText',
+          'visualReviewPending', 'isVerified', 'verifiedAt', 'verifiedBy'
         ]) &&
         (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
         (!('itemId' in data) || (data.itemId is string && data.itemId.size() <= 128)) &&
@@ -122,6 +123,8 @@ service cloud.firestore {
         (!('failedAttempts' in data) || data.failedAttempts is number) &&
         (!('isLocked' in data) || data.isLocked is bool) &&
         (!('visualPassed' in data) || data.visualPassed is bool) &&
+        (!('visualProofText' in data) || (data.visualProofText is string && data.visualProofText.size() <= 1000)) &&
+        (!('visualReviewPending' in data) || data.visualReviewPending is bool) &&
         (!('isVerified' in data) || data.isVerified is bool) &&
         (!('verifiedAt' in data) || data.verifiedAt is timestamp) &&
         (!('verifiedBy' in data) || (data.verifiedBy is string && data.verifiedBy.size() <= 128));

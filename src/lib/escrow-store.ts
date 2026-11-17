@@ -317,3 +317,35 @@ export async function updateHandoverStatus(
 
   writeLocalHandovers(all);
 }
+
+/**
+ * Extends HandoverSession expiration by additional hours (e.g. +24 hours)
+ */
+export async function extendHandoverSession(
+  itemId: string,
+  additionalHours: number = 24
+): Promise<{ success: boolean; newExpiresAt?: string; error?: string }> {
+  const session = await getHandoverSessionByItemId(itemId);
+  if (!session) {
+    return { success: false, error: "Active handover session not found." };
+  }
+
+  const rawExpiresAt = session.expiresAt;
+  const currentExpiry =
+    typeof rawExpiresAt === "string"
+      ? new Date(rawExpiresAt).getTime()
+      : rawExpiresAt instanceof Date
+      ? rawExpiresAt.getTime()
+      : typeof (rawExpiresAt as { toDate?: () => Date })?.toDate === "function"
+      ? (rawExpiresAt as { toDate: () => Date }).toDate().getTime()
+      : Date.now();
+  const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
+  const newExpiresAt = new Date(baseTime + additionalHours * 60 * 60 * 1000).toISOString();
+
+  session.expiresAt = newExpiresAt;
+  session.timerExtended = true;
+  session.extendedAt = new Date().toISOString();
+
+  await persistHandoverSession(session);
+  return { success: true, newExpiresAt };
+}

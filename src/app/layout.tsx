@@ -4,6 +4,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import CookieBanner from "@/components/CookieBanner";
+import { LanguageProvider } from "@/context/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "Lost & Found Registry | Secure Community Property Registry",
@@ -38,22 +40,26 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Lost & Found" />
       </head>
       <body className="h-full flex flex-col bg-[#F8FAF7] text-[#1A201C] antialiased selection:bg-[#EBF3EF] selection:text-[#1B4D3E]">
-        {/* PWA Service Worker & Install Handler */}
-        <ServiceWorkerRegister />
+        <LanguageProvider>
+          <AuthProvider>
+            {/* PWA Service Worker & Install Handler */}
+            <ServiceWorkerRegister />
 
-        {/* Global Navigation Header */}
-        <Navbar />
+            {/* Global Navigation Header */}
+            <Navbar />
 
-        {/* Main Application Shell */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-          {children}
-        </main>
+            {/* Main Application Shell */}
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+              {children}
+            </main>
 
-        {/* Global Footer */}
-        <Footer />
+            {/* Global Footer */}
+            <Footer />
 
-        {/* Essential Cookie & Local Storage Consent */}
-        <CookieBanner />
+            {/* Essential Cookie & Local Storage Consent */}
+            <CookieBanner />
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

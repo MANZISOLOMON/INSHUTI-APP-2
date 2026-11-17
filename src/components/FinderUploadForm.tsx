@@ -16,15 +16,20 @@ import {
   CreditCard,
   KeyRound,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  LocateFixed,
+  RefreshCw
 } from "lucide-react";
-import { RWANDA_LOCATIONS, RwandaProvince } from "@/lib/rwanda-locations";
+import { RWANDA_LOCATIONS } from "@/lib/rwanda-locations";
 import { maskDocumentNumber } from "@/lib/masking";
 import { Category } from "@/types/database";
+import { detectCurrentRwandaLocation } from "@/lib/geolocation";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function FinderUploadForm() {
   const router = useRouter();
   const fileInputId = useId();
+  const { t } = useLanguage();
 
   // Wizard Step (1: Details, 2: Location & Fee, 3: Dual Verification)
   const [currentStep, setCurrentStep] = useState(1);
@@ -35,12 +40,14 @@ export default function FinderUploadForm() {
   const [description, setDescription] = useState("");
   const [rawDocNumber, setRawDocNumber] = useState("");
 
-  // Location Cascading Dropdowns
+  // Location Cascading Dropdowns & Auto-Detect
   const [selectedProvinceName, setSelectedProvinceName] = useState("Kigali City (Umujyi wa Kigali)");
   const [district, setDistrict] = useState("Gasabo");
   const [sector, setSector] = useState("Kimironko");
   const [meetingPoint, setMeetingPoint] = useState("");
   const [deliveryFee, setDeliveryFee] = useState("2000");
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationSuccessMsg, setLocationSuccessMsg] = useState<string | null>(null);
 
   // Dual Verification Setup (Option C)
   const [secretPrompt, setSecretPrompt] = useState("");
@@ -54,6 +61,10 @@ export default function FinderUploadForm() {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Dynamic category helpers
+  const isDocType = ["NATIONAL_ID", "DRIVING_LICENSE", "PASSPORT"].includes(category);
+  const isKeyOrOther = ["KEYS", "OTHER", "WALLET"].includes(category);
 
   // Handle Province Change
   const currentProvince = RWANDA_LOCATIONS.find((p) => p.name === selectedProvinceName) || RWANDA_LOCATIONS[0];
@@ -80,6 +91,26 @@ export default function FinderUploadForm() {
     }
   };
 
+  // One-Tap Geolocation Auto-Detect
+  const handleDetectLocation = async () => {
+    setDetectingLocation(true);
+    setLocationSuccessMsg(null);
+    setErrorMsg(null);
+
+    try {
+      const loc = await detectCurrentRwandaLocation();
+      setSelectedProvinceName(loc.province);
+      setDistrict(loc.district);
+      setSector(loc.sector);
+      setLocationSuccessMsg(`Location detected: ${loc.district} › ${loc.sector}`);
+      setTimeout(() => setLocationSuccessMsg(null), 4000);
+    } catch (err) {
+      setErrorMsg(`Could not auto-detect location: ${(err as Error).message}. Please select your location from the dropdowns.`);
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -97,6 +128,15 @@ export default function FinderUploadForm() {
     if (!termsAgreed) {
       setErrorMsg("You must agree to the Terms of Service and verify legal authorization before submitting.");
       return;
+    }
+
+    // Strict validation for ID documents
+    if (category === "NATIONAL_ID" && rawDocNumber.trim()) {
+      const cleaned = rawDocNumber.replace(/[\s-]/g, "");
+      if (cleaned.length !== 16 || !cleaned.startsWith("1")) {
+        setErrorMsg("Rwandan National ID must be exactly 16 digits starting with '1' (e.g. 1 199X X XXXXXXX X XX).");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -148,10 +188,10 @@ export default function FinderUploadForm() {
       <div className="space-y-2">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-semibold border border-[#DEEBE5]">
           <Shield className="w-3.5 h-3.5" />
-          <span>Finder Registry Wizard • Step {currentStep} of 3</span>
+          <span>{t.wizardStep} • Step {currentStep} of 3</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A201C] tracking-tight">
-          Report a Found Item
+          {t.reportFoundBtn}
         </h1>
         <p className="text-xs sm:text-sm text-[#65736B]">
           Help reunite an owner with their property. Your sensitive inputs are automatically masked and encrypted.
@@ -172,6 +212,13 @@ export default function FinderUploadForm() {
         </div>
       )}
 
+      {locationSuccessMsg && (
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-[#10B981]" />
+          <span>{locationSuccessMsg}</span>
+        </div>
+      )}
+
       {successMsg && (
         <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -186,16 +233,16 @@ export default function FinderUploadForm() {
             {/* Category selection */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1A201C]">
-                Item Category
+                {t.itemCategory}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {[
-                  { id: "NATIONAL_ID", label: "National ID", icon: FileText },
-                  { id: "DRIVING_LICENSE", label: "Driver's License", icon: CreditCard },
-                  { id: "PASSPORT", label: "Passport", icon: Shield },
-                  { id: "WALLET", label: "Wallet", icon: CreditCard },
-                  { id: "KEYS", label: "Keys", icon: KeyRound },
-                  { id: "OTHER", label: "Other Item", icon: HelpCircle },
+                  { id: "NATIONAL_ID", label: t.catNationalId, icon: FileText },
+                  { id: "DRIVING_LICENSE", label: t.catDriverLicense, icon: CreditCard },
+                  { id: "PASSPORT", label: t.catPassport, icon: Shield },
+                  { id: "WALLET", label: t.catWallet, icon: CreditCard },
+                  { id: "KEYS", label: t.catKeys, icon: KeyRound },
+                  { id: "OTHER", label: t.catOther, icon: HelpCircle },
                 ].map((cat) => {
                   const Icon = cat.icon;
                   const isSelected = category === cat.id;
@@ -221,23 +268,35 @@ export default function FinderUploadForm() {
             {/* Title */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-[#1A201C]">
-                Listing Title
+                {t.listingTitle}
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Rwanda National ID found in Kimironko"
+                placeholder={
+                  category === "KEYS"
+                    ? "e.g. Motorcycle TVS Key found at Kacyiru Stage"
+                    : category === "WALLET"
+                    ? "e.g. Black leather bifold wallet found in Musanze"
+                    : "e.g. Rwanda National ID found in Kimironko"
+                }
                 className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 focus:border-[#1B4D3E]"
               />
             </div>
 
-            {/* Document Number with Live Zero-Trust Masking */}
+            {/* DYNAMIC FIELD: Document Number vs Item Identifier */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-[#1A201C]">
-                  Full Document Number / Serial
+                  {isDocType
+                    ? category === "NATIONAL_ID"
+                      ? "National ID Number (16 Digits)"
+                      : category === "PASSPORT"
+                      ? "Passport Number (e.g. PC-XXXXXXX)"
+                      : "Driver's License Permit Number (e.g. DL-XXXXXXX)"
+                    : t.itemIdentifierLabel}
                 </label>
                 <span className="text-[11px] text-[#65736B] flex items-center gap-1">
                   <Lock className="w-3 h-3 text-[#1B4D3E]" />
@@ -246,9 +305,20 @@ export default function FinderUploadForm() {
               </div>
               <input
                 type="text"
+                required={isDocType}
                 value={rawDocNumber}
                 onChange={(e) => setRawDocNumber(e.target.value)}
-                placeholder="e.g. 119988001234521 or DL-2024902"
+                placeholder={
+                  category === "NATIONAL_ID"
+                    ? "1 199X X XXXXXXX X XX"
+                    : category === "PASSPORT"
+                    ? "PC-1234567"
+                    : category === "DRIVING_LICENSE"
+                    ? "DL-2024902"
+                    : category === "KEYS"
+                    ? "e.g. Set of 3 brass keys with black Toyota remote"
+                    : "e.g. Distinct serial, brand, or tag number"
+                }
                 className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 focus:border-[#1B4D3E]"
               />
               {rawDocNumber && (
@@ -273,7 +343,7 @@ export default function FinderUploadForm() {
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Mention physical condition, wallet color, or surrounding spot without revealing secret details..."
+                placeholder="Mention physical condition, keychain tag color, or surrounding spot without revealing secret details..."
                 className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 focus:border-[#1B4D3E]"
               />
             </div>
@@ -284,6 +354,10 @@ export default function FinderUploadForm() {
                 onClick={() => {
                   if (!title) {
                     setErrorMsg("Please specify a listing title.");
+                    return;
+                  }
+                  if (isDocType && !rawDocNumber.trim()) {
+                    setErrorMsg("Please enter the document number.");
                     return;
                   }
                   setErrorMsg(null);
@@ -301,14 +375,33 @@ export default function FinderUploadForm() {
         {/* STEP 2: LOCATION & HANDOVER SPOT */}
         {currentStep === 2 && (
           <div className="space-y-5 animate-fade-in">
+            {/* Location Header with One-Tap Auto-Detect Button */}
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-[#E5E9E4]">
+              <div>
+                <h3 className="text-sm font-bold text-[#1A201C]">{t.locationSection}</h3>
+                <p className="text-[11px] text-[#65736B]">Select where you recovered the property</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                disabled={detectingLocation}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] border border-[#DEEBE5] transition-all cursor-pointer"
+                title="Detect current location via browser GPS"
+              >
+                <LocateFixed className={`w-3.5 h-3.5 ${detectingLocation ? "animate-spin text-[#1B4D3E]" : "text-[#10B981]"}`} />
+                <span>{detectingLocation ? t.detectingLocation : t.detectLocation}</span>
+              </button>
+            </div>
+
             {/* Cascading Rwanda Locations */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#1A201C]">Province</label>
+                <label className="block text-xs font-semibold text-[#1A201C]">{t.provinceLabel}</label>
                 <select
                   value={selectedProvinceName}
                   onChange={(e) => handleProvinceSelect(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 cursor-pointer"
                 >
                   {RWANDA_LOCATIONS.map((p) => (
                     <option key={p.name} value={p.name}>
@@ -319,11 +412,11 @@ export default function FinderUploadForm() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#1A201C]">District</label>
+                <label className="block text-xs font-semibold text-[#1A201C]">{t.districtLabel}</label>
                 <select
                   value={district}
                   onChange={(e) => handleDistrictSelect(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 cursor-pointer"
                 >
                   {availableDistricts.map((d) => (
                     <option key={d.name} value={d.name}>
@@ -334,11 +427,11 @@ export default function FinderUploadForm() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#1A201C]">Sector</label>
+                <label className="block text-xs font-semibold text-[#1A201C]">{t.sectorLabel}</label>
                 <select
                   value={sector}
                   onChange={(e) => setSector(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 cursor-pointer"
                 >
                   {availableSectors.map((s) => (
                     <option key={s} value={s}>
@@ -352,7 +445,7 @@ export default function FinderUploadForm() {
             {/* Safe Handover Meeting Point */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-[#1A201C]">
-                Suggested Safe Handover Point
+                {t.meetingPointLabel}
               </label>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-[#65736B] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -373,7 +466,7 @@ export default function FinderUploadForm() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-[#1A201C]">
-                  Finder Delivery Fee (RWF)
+                  {t.rewardOrFeeLabel}
                 </label>
                 <span className="badge-escrow">MoMo Escrow Protected</span>
               </div>
@@ -418,7 +511,7 @@ export default function FinderUploadForm() {
             {/* Photo Upload with Zero-Trust Visual Preview */}
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-[#1A201C]">
-                Item Photo (Zero-Trust Auto-Blurred)
+                {t.uploadPhoto}
               </label>
               <div className="relative border-2 border-dashed border-[#DEEBE5] rounded-2xl p-4 text-center hover:bg-[#F8FAF7] transition-colors">
                 <input
@@ -461,11 +554,11 @@ export default function FinderUploadForm() {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#10B981]" />
                 <h4 className="text-xs font-bold text-[#1A201C]">
-                  Option A Challenge Question (For Claimer)
+                  {t.secretPromptLabel}
                 </h4>
               </div>
               <p className="text-[11px] text-[#65736B]">
-                Set a secret question only the rightful owner can answer (e.g., &quot;What keychain is attached?&quot;).
+                Set a secret question only the rightful owner can answer (e.g., &quot;What keychain is attached?&quot; or &quot;What is the birth sector on the back?&quot;).
               </p>
 
               <div className="space-y-1.5">
@@ -483,7 +576,7 @@ export default function FinderUploadForm() {
                   type="text"
                   value={secretAnswer}
                   onChange={(e) => setSecretAnswer(e.target.value)}
-                  placeholder="Secret expected answer (hashed immediately before saving)"
+                  placeholder={t.secretAnswerLabel}
                   className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E9E4] text-xs text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
                 />
               </div>
@@ -492,7 +585,7 @@ export default function FinderUploadForm() {
             {/* Finder Contact Phone */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-[#1A201C]">
-                Your Mobile Phone Number (For SMS Handover Alerts)
+                {t.phoneLabel}
               </label>
               <input
                 type="tel"
@@ -517,11 +610,7 @@ export default function FinderUploadForm() {
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#1B4D3E] focus:ring-[#1B4D3E]/30 accent-[#1B4D3E] cursor-pointer"
               />
               <label htmlFor="finder-terms-checkbox" className="text-xs text-[#1A201C] cursor-pointer leading-relaxed">
-                I agree to the{" "}
-                <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1B4D3E] underline hover:text-[#153D31]">
-                  Terms of Service
-                </a>{" "}
-                and verify that I am legally authorized to post this item.
+                {t.termsAgreement}
               </label>
             </div>
 
@@ -530,22 +619,24 @@ export default function FinderUploadForm() {
                 type="button"
                 onClick={() => setCurrentStep(2)}
                 className="btn-outline"
-                disabled={isSubmitting}
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || !termsAgreed}
-                className="btn-primary min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
+                className="btn-primary py-3"
               >
                 {isSubmitting ? (
-                  <span>Processing Zero-Trust...</span>
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>{t.submitting}</span>
+                  </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Publish Found Item</span>
+                    <Shield className="w-4 h-4" />
+                    <span>{t.submitFoundBtn}</span>
                   </>
                 )}
               </button>
@@ -556,4 +647,3 @@ export default function FinderUploadForm() {
     </div>
   );
 }
-

@@ -43,8 +43,9 @@ export const ItemCreateSchema = z.object({
  */
 export const VerifyClaimSchema = z.object({
   itemId: z.string().trim().min(1, "Item ID is required"),
-  option: z.enum(["CHALLENGE", "VISUAL"] as const),
-  answer: z.string().trim().max(200).optional(),
+  option: z.enum(["CHALLENGE", "VISUAL", "APPROVE"] as const),
+  answer: z.string().trim().max(500).optional(),
+  visualNote: z.string().trim().max(1000).optional(),
   notes: z.string().trim().max(1000).optional(),
 });
 

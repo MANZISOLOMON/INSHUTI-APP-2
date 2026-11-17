@@ -51,6 +51,11 @@ export default function HandoverQRModal({
   const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
   const [releaseSuccess, setReleaseSuccess] = useState<Record<string, unknown> | null>(null);
 
+  // 24-Hour Extension State
+  const [extensionLoading, setExtensionLoading] = useState(false);
+  const [extensionMessage, setExtensionMessage] = useState<string | null>(null);
+  const [timerExtended, setTimerExtended] = useState(false);
+
   const scannerRef = useRef<HTMLDivElement>(null);
 
   // Keyboard Escape listener
@@ -186,6 +191,28 @@ export default function HandoverQRModal({
       setErrorMsg((err as Error).message);
     } finally {
       setIsSubmittingCheckIn(false);
+    }
+  };
+
+  const handleRequestExtension = async () => {
+    setExtensionLoading(true);
+    setExtensionMessage(null);
+    try {
+      const res = await fetch("/api/escrow/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to extend handover timer.");
+      }
+      setTimerExtended(true);
+      setExtensionMessage(data.message || "24-Hour extension granted! Both parties notified via SMS.");
+    } catch (err) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setExtensionLoading(false);
     }
   };
 
@@ -353,10 +380,30 @@ export default function HandoverQRModal({
                     </span>
                   </div>
 
-                  {/* Grace Timer */}
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-[#65736B]">
-                    <Clock className="w-3.5 h-3.5 text-[#D97706]" />
-                    <span>48-hour handover timer active</span>
+                  {/* Grace Timer & 24-Hour Extension */}
+                  <div className="p-3.5 rounded-2xl bg-[#FEF3C7]/40 border border-[#FDE68A] flex flex-col items-center gap-2 text-xs text-[#92400E] max-w-sm mx-auto">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Clock className="w-4 h-4 text-[#D97706]" />
+                      <span>{timerExtended ? "Extended Handover Window Active (+24h)" : "48-Hour Handover Grace Window Active"}</span>
+                    </div>
+
+                    {extensionMessage ? (
+                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center gap-1.5 text-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#10B981]" />
+                        <span>{extensionMessage}</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleRequestExtension}
+                        disabled={extensionLoading || timerExtended}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white text-[#92400E] hover:bg-[#FEF3C7] border border-[#FDE68A] text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                        title="Extend timer if traffic or delay occurs in Kigali"
+                      >
+                        <Clock className={`w-3.5 h-3.5 ${extensionLoading ? "animate-spin text-[#D97706]" : ""}`} />
+                        <span>{extensionLoading ? "Requesting..." : "Request 24-Hour Extension"}</span>
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -418,6 +465,26 @@ export default function HandoverQRModal({
                   >
                     {isSubmittingCheckIn ? "Verifying..." : "Confirm Receipt"}
                   </button>
+                </div>
+
+                {/* Claimer 24-Hour Extension Control */}
+                <div className="pt-2 text-center">
+                  {extensionMessage ? (
+                    <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
+                      <span>{extensionMessage}</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRequestExtension}
+                      disabled={extensionLoading || timerExtended}
+                      className="text-xs text-[#92400E] hover:underline inline-flex items-center gap-1 font-medium cursor-pointer"
+                    >
+                      <Clock className={`w-3.5 h-3.5 ${extensionLoading ? "animate-spin" : ""}`} />
+                      <span>Delayed by traffic? Request 24-Hour Extension</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

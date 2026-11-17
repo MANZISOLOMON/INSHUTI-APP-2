@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   ShieldCheck, 
   PlusCircle, 
@@ -16,8 +17,14 @@ import {
   MapPin
 } from "lucide-react";
 import ItemCatalog from "@/components/ItemCatalog";
+import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
+  const router = useRouter();
+  const { t } = useLanguage();
+  const { requireAuth } = useAuth();
+
   return (
     <div className="space-y-12">
       {/* 1. Hero Section */}
@@ -35,30 +42,30 @@ export default function Home() {
           Rwanda&apos;s trusted community lost and found. Finders earn safe delivery rewards, owners verify ownership with confidential challenges, and payouts release automatically via QR check-in.
         </p>
 
-        {/* Action Buttons (Strict Pill Buttons per Design Brief) */}
+        {/* Action Buttons (Standardized plain English) */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <Link
-            href="/report-found"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1B4D3E] text-white font-medium text-sm hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-soft"
+          <button
+            onClick={() => requireAuth(() => router.push("/report-found"))}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1B4D3E] text-white font-medium text-sm hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-soft cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Report Found Item</span>
-          </Link>
+            <span>{t.reportFoundBtn}</span>
+          </button>
 
-          <Link
-            href="/post-lost"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#EBF3EF] text-[#1B4D3E] font-medium text-sm hover:bg-[#DEEBE5] active:scale-[0.98] transition-all"
+          <button
+            onClick={() => requireAuth(() => router.push("/post-lost"))}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#EBF3EF] text-[#1B4D3E] font-medium text-sm hover:bg-[#DEEBE5] active:scale-[0.98] transition-all cursor-pointer"
           >
             <Coins className="w-4 h-4" />
-            <span>Post Lost Bounty</span>
-          </Link>
+            <span>{t.postLostBtn}</span>
+          </button>
 
           <Link
             href="/search"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-[#1A201C] border border-[#E5E9E4] font-medium text-sm hover:bg-[#F8FAF7] active:scale-[0.98] transition-all"
           >
             <Search className="w-4 h-4 text-[#65736B]" />
-            <span>Browse Registry</span>
+            <span>{t.searchBtn}</span>
           </Link>
         </div>
       </section>
