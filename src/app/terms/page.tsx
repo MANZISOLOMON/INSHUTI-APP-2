@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Shield, FileCheck, Coins, QrCode, AlertTriangle } from "lucide-react";
 
 export const metadata = {
-  title: "Terms of Service & Community Guardrails | Lost & Found Rwanda",
-  description: "Terms governing property reporting, dual ownership verification, and MoMo micro-escrow handovers.",
+  title: "Terms of Service & Community Guardrails | Found IN",
+  description: "Found IN - Your Secure Recovery Solution. Terms governing property reporting, dual ownership verification, and MoMo micro-escrow handovers.",
 };
 
 export default function TermsOfServicePage() {
@@ -63,7 +63,7 @@ export default function TermsOfServicePage() {
             1. Acceptance of Terms & Eligibility
           </h2>
           <p className="text-xs text-[#65736B] leading-relaxed">
-            By accessing or using the Lost & Found Registry platform, you agree to be bound by these Terms of Service. You affirm that you are either the lawful owner of the property or a Good Samaritan finder acting in good faith to return lost items to their rightful owners.
+            By accessing or using the Found IN platform, you agree to be bound by these Terms of Service. You affirm that you are either the lawful owner of the property or a Good Samaritan finder acting in good faith to return lost items to their rightful owners.
           </p>
         </section>
 

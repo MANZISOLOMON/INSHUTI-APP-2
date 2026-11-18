@@ -590,7 +590,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                 {/* WhatsApp Quick Share Button */}
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(
-                    `🚨 Lost & Found Rwanda Alert!\n📦 Item: ${item.title}\n🔒 Reference: ${item.maskedDocNumber || item.category.replace("_", " ")}\n📍 Location: ${item.sector}, ${item.district}\n🛡️ Verify or claim securely: https://lost-it-found-it-rwanda.vercel.app/search?query=${encodeURIComponent(item.id)}`
+                    `🚨 Found IN Rwanda Alert!\n🛡️ Your Secure Recovery Solution\n📦 Item: ${item.title}\n🔒 Reference: ${item.maskedDocNumber || item.category.replace("_", " ")}\n📍 Location: ${item.sector}, ${item.district}\n🔍 Verify or claim securely: https://lost-it-found-it-rwanda.vercel.app/search?query=${encodeURIComponent(item.id)}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

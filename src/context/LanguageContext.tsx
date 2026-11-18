@@ -10,6 +10,9 @@ export interface Translations {
   navPostLost: string;
   navSearchItems: string;
   navPrivacyAccount: string;
+  navMyDashboard: string;
+  navSignIn: string;
+  navSignOut: string;
   
   // Hero & General
   brandTitle: string;
@@ -85,9 +88,12 @@ const translations: Record<Language, Translations> = {
     navPostLost: "Post Lost Item",
     navSearchItems: "Search Items",
     navPrivacyAccount: "Privacy & Account",
+    navMyDashboard: "My Dashboard",
+    navSignIn: "Sign In",
+    navSignOut: "Sign Out",
     
-    brandTitle: "Lost & Found",
-    brandSubtitle: "Secure Community Registry",
+    brandTitle: "Found IN",
+    brandSubtitle: "Your Secure Recovery Solution",
     reportFoundBtn: "Report Found Item",
     postLostBtn: "Post Lost Item",
     searchBtn: "Search Items",
@@ -153,9 +159,12 @@ const translations: Record<Language, Translations> = {
     navPostLost: "Publier un objet perdu",
     navSearchItems: "Rechercher des objets",
     navPrivacyAccount: "Confidentialité & Compte",
+    navMyDashboard: "Mon Tableau de Bord",
+    navSignIn: "Connexion",
+    navSignOut: "Déconnexion",
     
-    brandTitle: "Objets Trouvés",
-    brandSubtitle: "Registre Communautaire Sécurisé",
+    brandTitle: "Found IN",
+    brandSubtitle: "Votre Solution de Récupération Sécurisée",
     reportFoundBtn: "Signaler un objet trouvé",
     postLostBtn: "Publier un objet perdu",
     searchBtn: "Rechercher des objets",
@@ -221,9 +230,12 @@ const translations: Record<Language, Translations> = {
     navPostLost: "Tanga Icyatakaye",
     navSearchItems: "Shakisha Ibintu",
     navPrivacyAccount: "Umutekano & Konti",
+    navMyDashboard: "Urubuga Rwanjye",
+    navSignIn: "Injira",
+    navSignOut: "Sohoka",
     
-    brandTitle: "Ibyatoraguwe & Ibyatakaye",
-    brandSubtitle: "Urubuga rw'Umutekano rw'Abanyarwanda",
+    brandTitle: "Found IN",
+    brandSubtitle: "Umutekano n'Igisubizo cyo Kubona Ibyatakaye",
     reportFoundBtn: "Tanga Icyatoraguwe",
     postLostBtn: "Tanga Icyatakaye",
     searchBtn: "Shakisha Ibintu",

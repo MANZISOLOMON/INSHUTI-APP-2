@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, Lock, Smartphone, HeartHandshake, Download, FileText, Scale, RefreshCw, Cookie, UserCheck } from "lucide-react";
+import Image from "next/image";
+import { Lock, Smartphone, Download, Scale, RefreshCw, Cookie, UserCheck, Shield } from "lucide-react";
 
 export default function Footer() {
   const handlePwaClick = () => {
     if (typeof window !== "undefined" && window.triggerPwaInstall) {
       window.triggerPwaInstall();
     } else {
-      alert("To install Lost & Found Rwanda:\n• On iPhone: Tap the Share button in Safari, then tap 'Add to Home Screen'.\n• On Android: Tap Chrome menu (3 dots), then tap 'Install app' or 'Add to Home Screen'.");
+      alert("To install Found IN Rwanda:\n• On iPhone: Tap the Share button in Safari, then tap 'Add to Home Screen'.\n• On Android: Tap Chrome menu (3 dots), then tap 'Install app' or 'Add to Home Screen'.");
     }
   };
 
@@ -19,15 +20,27 @@ export default function Footer() {
           {/* 1. Brand & Business Info */}
           <div className="md:col-span-1 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#1B4D3E] flex items-center justify-center text-white shadow-xs">
-                <Shield className="w-5 h-5 text-emerald-300" />
+              <div className="w-10 h-10 rounded-xl bg-[#F6F8F3] border border-[#DEEBE5] flex items-center justify-center p-1 shadow-2xs">
+                <Image 
+                  src="/shield-icon.png" 
+                  alt="Found IN Logo" 
+                  width={30} 
+                  height={30} 
+                  className="object-contain"
+                />
               </div>
-              <span className="font-bold text-base text-[#1A201C]">
-                Lost & Found
-              </span>
+              <div className="flex flex-col">
+                <div className="flex items-center tracking-tight leading-none">
+                  <span className="font-extrabold text-base text-[#1B4D3E]">Found</span>
+                  <span className="font-extrabold text-base text-[#10B981] ml-1">IN</span>
+                </div>
+                <span className="text-[10px] text-[#65736B] font-semibold tracking-wide uppercase mt-0.5">
+                  Your Secure Recovery Solution
+                </span>
+              </div>
             </div>
             <p className="text-xs text-[#65736B] leading-relaxed">
-              Rwanda&apos;s privacy-first community registry connecting finders and rightful owners through zero-trust photo protection, confidential verification, and Mobile Money micro-escrow.
+              Rwanda&apos;s privacy-first recovery platform connecting finders and rightful owners through zero-trust photo protection, confidential verification, and Mobile Money micro-escrow.
             </p>
             
             {/* Operator Contact & Business Address */}
@@ -53,12 +66,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/dashboard?tab=handovers" className="hover:text-[#1B4D3E] transition-colors">
                   QR Code Handover Check-In
                 </Link>
               </li>
               <li>
-                <Link href="/report-found" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/dashboard?tab=wallet" className="hover:text-[#1B4D3E] transition-colors">
                   MoMo Finder Delivery Fee Payouts
                 </Link>
               </li>
@@ -130,7 +143,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/settings" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5 font-medium text-[#1B4D3E]">
+                <Link href="/dashboard?tab=settings" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5 font-medium text-[#1B4D3E]">
                   <UserCheck className="w-3.5 h-3.5 text-[#1B4D3E]" />
                   <span>Account Data Controls & Purge</span>
                 </Link>
@@ -141,7 +154,7 @@ export default function Footer() {
 
         {/* Bottom Legal Bar */}
         <div className="border-t border-[#E5E9E4] mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#65736B]">
-          <p>© {new Date().getFullYear()} Lost & Found Rwanda. Operated by Digital Elevation Solutions, Kanombe, Kigali.</p>
+          <p>© {new Date().getFullYear()} Found IN Rwanda. Operated by Digital Elevation Solutions, Kanombe, Kigali.</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/privacy" className="hover:text-[#1B4D3E] transition-colors">
               Privacy
@@ -159,7 +172,7 @@ export default function Footer() {
               Cookies
             </Link>
             <span>•</span>
-            <Link href="/settings" className="hover:text-[#1B4D3E] transition-colors">
+            <Link href="/dashboard?tab=settings" className="hover:text-[#1B4D3E] transition-colors">
               Data Rights
             </Link>
           </div>

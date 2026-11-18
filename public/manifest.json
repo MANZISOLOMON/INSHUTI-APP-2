@@ -1,7 +1,7 @@
 {
-  "name": "Lost & Found Registry",
-  "short_name": "Lost & Found",
-  "description": "Secure community registry for lost documents and property with zero-trust verification and MoMo escrow.",
+  "name": "Found IN - Your Secure Recovery Solution",
+  "short_name": "Found IN",
+  "description": "Found IN - Your Secure Recovery Solution. Secure community registry for lost documents and property with zero-trust verification and MoMo escrow.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F8FAF7",

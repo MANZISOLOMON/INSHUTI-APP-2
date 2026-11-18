@@ -546,6 +546,61 @@ export async function updateItemStatus(itemId: string, status: Item["status"]): 
 }
 
 /**
+ * Updates custom fields on an Item (e.g. description, status).
+ */
+export async function updateItemFields(itemId: string, patch: Partial<Item>): Promise<Item | null> {
+  const localItems = readLocalItems();
+  const item = localItems.find((i) => i.id === itemId);
+  if (!item) return null;
+
+  Object.assign(item, patch);
+  writeLocalItems(localItems);
+
+  if (isFirebaseAdminConfigured()) {
+    try {
+      await withTimeout(adminDb.collection("items").doc(itemId).update(patch), 1500, null);
+    } catch {
+      // Fallback
+    }
+  }
+
+  return item;
+}
+
+/**
+ * Returns items and handovers associated with a user's phone or UID.
+ */
+export async function getItemsForUser(userPhone?: string, uid?: string): Promise<{
+  myListings: Item[];
+  myClaims: Item[];
+}> {
+  const allItems = await getAllItemsRaw();
+  const cleanPhone = userPhone ? userPhone.replace(/\D/g, "") : "";
+  const last9Phone = cleanPhone.length >= 9 ? cleanPhone.slice(-9) : cleanPhone;
+
+  const matchesUser = (phone?: string, ownerId?: string | null): boolean => {
+    if (uid && ownerId === uid) return true;
+    if (!phone || !last9Phone) return false;
+    const cleanItemPhone = phone.replace(/\D/g, "");
+    return cleanItemPhone.includes(last9Phone) || (cleanPhone.length > 0 && cleanItemPhone === cleanPhone);
+  };
+
+  const myListings = allItems.filter((item) => {
+    const raw = item as unknown as Record<string, unknown>;
+    const contactPhone = (raw.contactPhone as string) || (raw.finderPhone as string);
+    return matchesUser(contactPhone, item.finderId);
+  });
+
+  const myClaims = allItems.filter((item) => {
+    const raw = item as unknown as Record<string, unknown>;
+    const claimerPhone = raw.claimerPhone as string;
+    return matchesUser(claimerPhone, item.claimerId) || item.status === "CLAIMED";
+  });
+
+  return { myListings, myClaims };
+}
+
+/**
  * Permanently deletes or removes an item (Admin moderation).
  */
 export async function deleteItem(itemId: string): Promise<boolean> {

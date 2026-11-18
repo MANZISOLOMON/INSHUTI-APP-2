@@ -31,15 +31,15 @@ export default function Home() {
       <section className="text-center max-w-3xl mx-auto space-y-5 pt-4 pb-2">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-semibold border border-[#DEEBE5]">
           <Sparkles className="w-3.5 h-3.5 text-[#10B981]" />
-          <span>Official Community Registry • Privacy-First & MoMo Escrow Protected</span>
+          <span>Found IN • Your Secure Recovery Solution</span>
         </div>
 
         <h1 className="text-[32px] sm:text-[40px] font-bold text-[#1A201C] leading-[40px] sm:leading-[48px] tracking-tight">
-          Recover Lost Property in Rwanda With Privacy & Verified Escrow
+          Recover Lost Documents & Property With Verified Escrow Security
         </h1>
 
         <p className="text-base text-[#65736B] leading-relaxed max-w-2xl mx-auto">
-          Rwanda&apos;s trusted community lost and found. Finders earn safe delivery rewards, owners verify ownership with confidential challenges, and payouts release automatically via QR check-in.
+          <strong className="text-[#1B4D3E]">Found IN</strong> is Rwanda&apos;s trusted community recovery solution. Finders earn safe delivery rewards, owners verify ownership with confidential challenges, and escrow funds release automatically via QR check-in.
         </p>
 
         {/* Action Buttons (Standardized plain English) */}

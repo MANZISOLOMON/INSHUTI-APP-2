@@ -8,11 +8,15 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Lost & Found Registry | Secure Community Property Registry",
-  description: "Decentralized, privacy-first lost & found registry with zero-trust document masking, QR verification, and MoMo micro-escrow.",
+  title: "Found IN | Your Secure Recovery Solution",
+  description: "Found IN - Your Secure Recovery Solution. Decentralized, privacy-first lost & found registry with zero-trust document masking, QR verification, and MoMo micro-escrow.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: "/icons/icon-192.png",
   },
 };
@@ -34,10 +38,11 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Lost & Found" />
+        <meta name="apple-mobile-web-app-title" content="Found IN" />
       </head>
       <body className="h-full flex flex-col bg-[#F8FAF7] text-[#1A201C] antialiased selection:bg-[#EBF3EF] selection:text-[#1B4D3E]">
         <LanguageProvider>

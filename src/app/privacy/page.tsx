@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Shield, Lock, EyeOff, FileText, CheckCircle2, UserX } from "lucide-react";
 
 export const metadata = {
-  title: "Privacy Policy & Zero-Trust Data Protection | Lost & Found Rwanda",
-  description: "Our privacy commitments under Rwanda Law No. 058/2021 relating to the protection of personal data and cyber privacy.",
+  title: "Privacy Policy & Zero-Trust Data Protection | Found IN",
+  description: "Found IN - Your Secure Recovery Solution. Our privacy commitments under Rwanda Law No. 058/2021 relating to the protection of personal data and cyber privacy.",
 };
 
 export default function PrivacyPolicyPage() {

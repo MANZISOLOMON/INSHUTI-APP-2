@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Cookie, Shield, CheckCircle2, Lock } from "lucide-react";
 
 export const metadata = {
-  title: "Cookie & Local Storage Policy | Lost & Found Rwanda",
-  description: "Explanation of essential cookies and client storage used for zero-trust security and PWA caching.",
+  title: "Cookie & Local Storage Policy | Found IN",
+  description: "Explanation of essential cookies and client storage used for zero-trust security and PWA caching on Found IN - Your Secure Recovery Solution.",
 };
 
 export default function CookiesPolicyPage() {
@@ -41,7 +41,7 @@ export default function CookiesPolicyPage() {
             1. What Storage Technologies Do We Use?
           </h2>
           <p className="text-xs text-[#65736B] leading-relaxed">
-            The Lost & Found application utilizes standard HTML5 Web Storage (<code className="font-mono text-[#1B4D3E]">localStorage</code>) and Service Worker Caches (<code className="font-mono text-[#1B4D3E]">CacheStorage</code>) for the following essential purposes:
+            The Found IN application utilizes standard HTML5 Web Storage (<code className="font-mono text-[#1B4D3E]">localStorage</code>) and Service Worker Caches (<code className="font-mono text-[#1B4D3E]">CacheStorage</code>) for the following essential purposes:
           </p>
 
           <div className="overflow-x-auto pt-2">

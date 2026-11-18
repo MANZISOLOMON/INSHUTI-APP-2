@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Coins, RefreshCw, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 export const metadata = {
-  title: "Refund & Escrow Payout Policy | Lost & Found Rwanda",
-  description: "Rules governing Mobile Money escrow locking, refund eligibility, and fee disbursements.",
+  title: "Refund & Escrow Payout Policy | Found IN",
+  description: "Found IN - Your Secure Recovery Solution. Rules governing Mobile Money escrow locking, refund eligibility, and fee disbursements.",
 };
 
 export default function RefundPolicyPage() {
