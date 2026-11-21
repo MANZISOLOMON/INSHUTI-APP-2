@@ -39,44 +39,44 @@ export default function Footer() {
                 </span>
               </div>
             </div>
-            <p className="text-xs text-[#65736B] leading-relaxed">
+            <p className="text-xs text-[#4A5568] leading-relaxed">
               Rwanda&apos;s privacy-first recovery platform connecting finders and rightful owners through zero-trust photo protection, confidential verification, and Mobile Money micro-escrow.
             </p>
             
             {/* Operator Contact & Business Address */}
             <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] space-y-1 text-xs">
               <p className="font-bold text-[#1A201C]">Digital Elevation Solutions</p>
-              <p className="text-[#65736B]">Kanombe, Kigali, Rwanda</p>
-              <p className="text-[#65736B]">
+              <p className="text-[#4A5568]">Kanombe, Kigali, Rwanda</p>
+              <p className="text-[#4A5568]">
                 <a href="mailto:support@digitalelevation.rw" className="hover:text-[#1B4D3E] underline">
                   support@digitalelevation.rw
                 </a>
               </p>
-              <p className="text-[#65736B] font-mono text-[11px]">+250 788 000 000</p>
+              <p className="text-[#4A5568] font-mono text-[11px]">+250 788 000 000</p>
             </div>
           </div>
 
           {/* 2. Quick Links: Finders */}
           <div className="space-y-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1A201C]">For Finders</h4>
-            <ul className="space-y-2 text-xs text-[#65736B]">
+            <ul className="space-y-2.5 text-xs text-[#4A5568]">
               <li>
-                <Link href="/report-found" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/report-found" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   Report Found Property
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard?tab=handovers" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/dashboard?tab=handovers" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   QR Code Handover Check-In
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard?tab=wallet" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/dashboard?tab=wallet" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   MoMo Finder Delivery Fee Payouts
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   Approved Sector Police Posts
                 </Link>
               </li>
@@ -86,66 +86,60 @@ export default function Footer() {
           {/* 3. Quick Links: Owners & Claimers */}
           <div className="space-y-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1A201C]">For Claimers</h4>
-            <ul className="space-y-2 text-xs text-[#65736B]">
+            <ul className="space-y-2.5 text-xs text-[#4A5568]">
               <li>
-                <Link href="/search" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/search" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   Search Registered Documents
                 </Link>
               </li>
               <li>
-                <Link href="/post-lost" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/post-lost" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   Post Lost Item Bounty
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors">
+                <Link href="/#how-it-works" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
                   Confidential Challenge Verification
                 </Link>
               </li>
               <li>
                 <button
                   onClick={handlePwaClick}
-                  className="hover:text-[#1B4D3E] transition-colors text-left flex items-center gap-1.5 cursor-pointer"
+                  className="hover:text-[#1B4D3E] transition-colors text-left py-1 inline-block cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Install Mobile Web App (PWA)</span>
+                  Install Mobile Web App (PWA)
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* 4. Legal Policies & Consumer Trust */}
+          {/* 4. Legal Policies & Consumer Trust (Decluttered: no decorative Lucide icons) */}
           <div className="space-y-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1A201C]">Legal & Compliance</h4>
-            <ul className="space-y-2 text-xs text-[#65736B]">
+            <ul className="space-y-2.5 text-xs text-[#4A5568]">
               <li>
-                <Link href="/privacy" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Privacy Policy (Law 058/2021)</span>
+                <Link href="/privacy" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
+                  Privacy Policy (Law 058/2021)
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5">
-                  <Scale className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Terms of Service & Rules</span>
+                <Link href="/terms" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
+                  Terms of Service & Rules
                 </Link>
               </li>
               <li>
-                <Link href="/refund" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Refund & Escrow Policy</span>
+                <Link href="/refund" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
+                  Refund & Escrow Policy
                 </Link>
               </li>
               <li>
-                <Link href="/cookies" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5">
-                  <Cookie className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Cookie & Local Storage Policy</span>
+                <Link href="/cookies" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block">
+                  Cookie & Local Storage Policy
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard?tab=settings" className="hover:text-[#1B4D3E] transition-colors flex items-center gap-1.5 font-medium text-[#1B4D3E]">
-                  <UserCheck className="w-3.5 h-3.5 text-[#1B4D3E]" />
-                  <span>Account Data Controls & Purge</span>
+                <Link href="/dashboard?tab=settings" className="hover:text-[#1B4D3E] transition-colors py-1 inline-block font-semibold text-[#1B4D3E]">
+                  Account Data Controls & Purge
                 </Link>
               </li>
             </ul>
@@ -153,26 +147,26 @@ export default function Footer() {
         </div>
 
         {/* Bottom Legal Bar */}
-        <div className="border-t border-[#E5E9E4] mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#65736B]">
+        <div className="border-t border-[#E5E9E4] mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#4A5568]">
           <p>© {new Date().getFullYear()} Found IN Rwanda. Operated by Digital Elevation Solutions, Kanombe, Kigali.</p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/privacy" className="hover:text-[#1B4D3E] transition-colors">
+            <Link href="/privacy" className="hover:text-[#1B4D3E] transition-colors py-1">
               Privacy
             </Link>
             <span>•</span>
-            <Link href="/terms" className="hover:text-[#1B4D3E] transition-colors">
+            <Link href="/terms" className="hover:text-[#1B4D3E] transition-colors py-1">
               Terms
             </Link>
             <span>•</span>
-            <Link href="/refund" className="hover:text-[#1B4D3E] transition-colors">
+            <Link href="/refund" className="hover:text-[#1B4D3E] transition-colors py-1">
               Refunds
             </Link>
             <span>•</span>
-            <Link href="/cookies" className="hover:text-[#1B4D3E] transition-colors">
+            <Link href="/cookies" className="hover:text-[#1B4D3E] transition-colors py-1">
               Cookies
             </Link>
             <span>•</span>
-            <Link href="/dashboard?tab=settings" className="hover:text-[#1B4D3E] transition-colors">
+            <Link href="/dashboard?tab=settings" className="hover:text-[#1B4D3E] transition-colors py-1">
               Data Rights
             </Link>
           </div>

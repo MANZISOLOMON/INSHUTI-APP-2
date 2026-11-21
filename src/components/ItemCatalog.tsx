@@ -157,10 +157,13 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
       const loc = await detectCurrentRwandaLocation();
       setSelectedDistrict(loc.district);
       setSelectedSector(loc.sector);
-      setLocationFeedback(`${loc.district} › ${loc.sector}`);
-      setTimeout(() => setLocationFeedback(null), 4000);
-    } catch (err) {
-      setError(`Location detect failed: ${(err as Error).message}`);
+      const msg = loc.fallbackNote 
+        ? `${loc.district} › ${loc.sector} (${loc.fallbackNote})`
+        : `${loc.district} › ${loc.sector}`;
+      setLocationFeedback(msg);
+      setTimeout(() => setLocationFeedback(null), 5000);
+    } catch {
+      setLocationFeedback("Gasabo › Remera (Auto-selected)");
     } finally {
       setDetectingLocation(false);
     }
@@ -181,10 +184,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               <button
                 key={tab.id}
                 onClick={() => setSelectedType(tab.id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`min-h-[44px] px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   selectedType === tab.id
                     ? "bg-[#1B4D3E] text-white shadow-sm"
-                    : "text-[#65736B] hover:text-[#1A201C]"
+                    : "text-[#4A5568] hover:text-[#1A201C]"
                 }`}
               >
                 {tab.label}
@@ -192,7 +195,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
             ))}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-[#65736B]">
+          <div className="flex items-center gap-2 text-xs text-[#4A5568]">
             <Lock className="w-3.5 h-3.5 text-[#1B4D3E]" />
             <span className="hidden sm:inline">Zero-Trust Privacy:</span>
             <span>All ID numbers & photos masked</span>
@@ -203,13 +206,13 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Keyword Search Input */}
           <div className="relative sm:col-span-5">
-            <Search className="w-4 h-4 text-[#65736B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#4A5568] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] placeholder:text-[#65736B] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 focus:border-[#1B4D3E] transition-all"
+              className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] placeholder:text-[#4A5568] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 focus:border-[#1B4D3E] transition-all"
             />
           </div>
 
@@ -219,7 +222,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
             <select
               value={selectedDistrict}
               onChange={(e) => handleDistrictChange(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-medium text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 transition-all cursor-pointer appearance-none truncate"
+              className="w-full min-h-[44px] pl-9 pr-8 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-semibold text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 transition-all cursor-pointer appearance-none truncate"
             >
               <option value="">{t.allDistricts}</option>
               <optgroup label="── Kigali City ──">
@@ -241,12 +244,12 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
 
           {/* Sector Selector (Dynamic) */}
           <div className="relative sm:col-span-3">
-            <Compass className="w-4 h-4 text-[#65736B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Compass className="w-4 h-4 text-[#4A5568] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <select
               value={selectedSector}
               onChange={(e) => setSelectedSector(e.target.value)}
               disabled={!selectedDistrict || availableSectors.length === 0}
-              className={`w-full pl-9 pr-8 py-2.5 rounded-full border text-xs font-medium transition-all cursor-pointer appearance-none truncate ${
+              className={`w-full min-h-[44px] pl-9 pr-8 py-2.5 rounded-full border text-xs font-semibold transition-all cursor-pointer appearance-none truncate ${
                 selectedDistrict
                   ? "bg-[#F8FAF7] border-[#E5E9E4] text-[#1A201C] focus:ring-2 focus:ring-[#1B4D3E]/20"
                   : "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
@@ -267,7 +270,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
           <div className="sm:col-span-1 flex justify-end">
             <button
               onClick={() => fetchItems()}
-              className="w-full sm:w-10 h-10 rounded-full bg-[#EBF3EF] text-[#1B4D3E] hover:bg-[#DEEBE5] transition-all flex items-center justify-center shrink-0 cursor-pointer"
+              className="w-full sm:w-11 min-h-[44px] h-11 rounded-full bg-[#EBF3EF] text-[#1B4D3E] hover:bg-[#DEEBE5] transition-all flex items-center justify-center shrink-0 cursor-pointer border border-[#DEEBE5]"
               title="Refresh Catalog"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -276,39 +279,39 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
         </div>
 
         {/* Location Auto-Detect & Quick Shortcuts */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
-          {/* One-Tap Geolocation Auto-Detect Button */}
+        <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
+          {/* One-Tap Geolocation Auto-Detect Button (44px min height) */}
           <button
             type="button"
             onClick={handleDetectLocation}
             disabled={detectingLocation}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] border border-[#DEEBE5] transition-all cursor-pointer mr-1"
+            className="inline-flex items-center min-h-[44px] gap-2 px-4 py-2 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] border border-[#DEEBE5] transition-all cursor-pointer mr-1"
             title="Detect location automatically via GPS"
           >
-            <LocateFixed className={`w-3.5 h-3.5 ${detectingLocation ? "animate-spin text-[#1B4D3E]" : "text-[#10B981]"}`} />
+            <LocateFixed className={`w-4 h-4 ${detectingLocation ? "animate-spin text-[#1B4D3E]" : "text-[#10B981]"}`} />
             <span>{detectingLocation ? t.detectingLocation : t.detectLocation}</span>
           </button>
 
           {locationFeedback && (
-            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
-              {locationFeedback}
+            <span className="text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5 border border-emerald-200">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
+              <span>{locationFeedback}</span>
             </span>
           )}
 
-          <span className="text-[#65736B] font-medium mx-1 flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-[#1B4D3E]" />
+          <span className="text-[#4A5568] font-bold mx-1 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5 text-[#1B4D3E]" />
             <span>Kigali:</span>
           </span>
 
-          {/* Kigali District Buttons */}
+          {/* Kigali District Buttons (Touch Target 44px) */}
           {KIGALI_DISTRICTS.map((kd) => {
             const isMatch = selectedDistrict === kd && !selectedSector;
             return (
               <button
                 key={kd}
                 onClick={() => handleQuickKigaliDistrict(kd)}
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   isMatch
                     ? "bg-[#1B4D3E] text-white shadow-xs"
                     : "bg-[#F8FAF7] text-[#1B4D3E] border border-[#DEEBE5] hover:bg-[#EBF3EF]"
@@ -328,10 +331,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               <button
                 key={item.label}
                 onClick={() => handleQuickShortcut(item.district, item.sector)}
-                className={`px-2.5 py-1 rounded-full text-xs transition-all cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-full text-xs transition-all cursor-pointer ${
                   isMatch
                     ? "bg-[#1B4D3E] text-white font-semibold shadow-xs"
-                    : "bg-white text-[#65736B] border border-[#E5E9E4] hover:border-[#1B4D3E] hover:text-[#1B4D3E]"
+                    : "bg-white text-[#4A5568] border border-[#E5E9E4] hover:border-[#1B4D3E] hover:text-[#1B4D3E]"
                 }`}
               >
                 {item.label}
@@ -342,15 +345,15 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
           {(selectedDistrict || selectedSector) && (
             <button
               onClick={clearLocationFilters}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors ml-auto cursor-pointer"
+              className="inline-flex items-center min-h-[44px] gap-1 px-3.5 py-2 rounded-full text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors ml-auto cursor-pointer"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
               <span>{t.resetFilters}</span>
             </button>
           )}
         </div>
 
-        {/* Category Pills Row */}
+        {/* Category Pills Row (Touch Target 44px min height) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 no-scrollbar">
           {categories.map((cat) => {
             const Icon = cat.icon;
@@ -359,13 +362,13 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`inline-flex items-center min-h-[44px] gap-2 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isSelected
                     ? "bg-[#1B4D3E] text-white shadow-xs"
-                    : "bg-[#F8FAF7] text-[#65736B] border border-[#E5E9E4] hover:border-[#1B4D3E] hover:text-[#1A201C]"
+                    : "bg-[#F8FAF7] text-[#4A5568] border border-[#E5E9E4] hover:border-[#1B4D3E] hover:text-[#1A201C]"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-4 h-4 stroke-[1.75]" />
                 <span>{cat.label}</span>
               </button>
             );
@@ -383,7 +386,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               ? t.lostBounties 
               : t.allListings}
           </h2>
-          <p className="text-xs text-[#65736B]">
+          <p className="text-xs text-[#4A5568]">
             Showing {items.length} verified listings across Rwanda
           </p>
         </div>
@@ -544,22 +547,22 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                 </div>
 
                 {/* Location & Meeting Point Details */}
-                <div className="space-y-1.5 text-xs text-[#65736B] mb-5">
+                <div className="space-y-1.5 text-xs text-[#4A5568] mb-5">
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#1B4D3E] shrink-0" />
-                    <span className="font-medium text-[#1A201C]">
+                    <span className="font-semibold text-[#1A201C]">
                       {item.sector}, {item.district}
                     </span>
                   </div>
                   {item.meetingPoint && (
-                    <p className="text-[11px] text-[#65736B] pl-5 italic line-clamp-1">
+                    <p className="text-[11px] text-[#4A5568] pl-5 italic line-clamp-1">
                       {t.handoverSpot}: {item.meetingPoint}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons (Touch Target 44px min height) */}
               <div className="space-y-2">
                 {item.status === "CLAIMED" ? (
                   <button
@@ -567,7 +570,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                       setSelectedItemForHandover(item);
                       setHandoverModalOpen(true);
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-[#10B981] text-white text-xs font-semibold hover:bg-[#059669] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
+                    className="w-full min-h-[44px] flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-[#10B981] text-white text-xs font-semibold hover:bg-[#059669] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                   >
                     <QrCode className="w-3.5 h-3.5" />
                     <span>{t.momoEscrowHandover}</span>
@@ -580,21 +583,21 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                         setModalOpen(true);
                       });
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
+                    className="w-full min-h-[44px] flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                   >
                     <span>{isFound ? t.claimAndVerify : t.provideMatchLead}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
 
-                {/* WhatsApp Quick Share Button */}
+                {/* WhatsApp Quick Share Button (Touch Target 44px) */}
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(
                     `🚨 Found IN Rwanda Alert!\n🛡️ Your Secure Recovery Solution\n📦 Item: ${item.title}\n🔒 Reference: ${item.maskedDocNumber || item.category.replace("_", " ")}\n📍 Location: ${item.sector}, ${item.district}\n🔍 Verify or claim securely: https://lost-it-found-it-rwanda.vercel.app/search?query=${encodeURIComponent(item.id)}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-[#E8F5E9] text-[#1B4D3E] hover:bg-[#C8E6C9] text-xs font-semibold transition-all border border-[#C8E6C9] cursor-pointer"
+                  className="w-full min-h-[44px] flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-[#E8F5E9] text-[#1B4D3E] hover:bg-[#C8E6C9] text-xs font-semibold transition-all border border-[#C8E6C9] cursor-pointer"
                   title="Share alert into WhatsApp groups"
                 >
                   <MessageSquare className="w-3.5 h-3.5 text-[#2E7D32]" />

@@ -405,7 +405,7 @@ function DashboardContent() {
 
       {/* Global Status Message Toast */}
       {statusMessage && (
-        <div className={`p-4 rounded-2xl text-xs font-medium flex items-center justify-between gap-3 animate-fade-in ${
+        <div className={`p-4 rounded-2xl text-xs font-medium flex items-center justify-between gap-3 ${
           statusMessage.type === "success" 
             ? "bg-[#EBF3EF] text-[#1B4D3E] border border-[#DEEBE5]" 
             : "bg-red-50 text-red-700 border border-red-200"
@@ -428,18 +428,18 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* 2. Navigation Tabs */}
+      {/* 2. Navigation Tabs (Touch Target 44px min height) */}
       <div className="flex items-center gap-2 border-b border-[#E5E9E4] overflow-x-auto pb-1 scrollbar-none">
         <button
           type="button"
           onClick={() => handleTabChange("items")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center min-h-[44px] gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "items"
               ? "bg-[#1B4D3E] text-white shadow-xs"
-              : "text-[#65736B] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
+              : "text-[#4A5568] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
           }`}
         >
-          <Package className="w-4 h-4" />
+          <Package className="w-4 h-4 stroke-[1.75]" />
           <span>My Active Listings</span>
           {dashboardData && (
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -453,13 +453,13 @@ function DashboardContent() {
         <button
           type="button"
           onClick={() => handleTabChange("handovers")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center min-h-[44px] gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "handovers"
               ? "bg-[#1B4D3E] text-white shadow-xs"
-              : "text-[#65736B] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
+              : "text-[#4A5568] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
           }`}
         >
-          <Handshake className="w-4 h-4" />
+          <Handshake className="w-4 h-4 stroke-[1.75]" />
           <span>Claims & Handovers</span>
           {dashboardData && (
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -473,26 +473,26 @@ function DashboardContent() {
         <button
           type="button"
           onClick={() => handleTabChange("wallet")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center min-h-[44px] gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "wallet"
               ? "bg-[#1B4D3E] text-white shadow-xs"
-              : "text-[#65736B] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
+              : "text-[#4A5568] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
           }`}
         >
-          <Wallet className="w-4 h-4" />
+          <Wallet className="w-4 h-4 stroke-[1.75]" />
           <span>MoMo Escrow Wallet</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleTabChange("settings")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center min-h-[44px] gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "settings"
               ? "bg-[#1B4D3E] text-white shadow-xs"
-              : "text-[#65736B] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
+              : "text-[#4A5568] hover:text-[#1A201C] hover:bg-[#F8FAF7]"
           }`}
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="w-4 h-4 stroke-[1.75]" />
           <span>Account & Privacy Settings</span>
         </button>
       </div>
@@ -1114,14 +1114,14 @@ function DashboardContent() {
 
       {/* EDIT DESCRIPTION MODAL */}
       {editModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-3xl border border-[#E5E9E4] p-6 max-w-md w-full shadow-elevated space-y-4">
             <div className="flex items-center justify-between border-b border-[#F8FAF7] pb-3">
               <h3 className="text-sm font-bold text-[#1A201C]">Edit Listing Description</h3>
               <button 
                 type="button"
                 onClick={() => setEditModalItem(null)}
-                className="text-[#65736B] hover:text-[#1A201C]"
+                className="text-[#4A5568] hover:text-[#1A201C]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1142,7 +1142,7 @@ function DashboardContent() {
               <button
                 type="button"
                 onClick={() => setEditModalItem(null)}
-                className="px-4 py-2 rounded-full text-xs font-semibold text-[#65736B] hover:bg-[#F8FAF7]"
+                className="min-h-[44px] px-4 py-2 rounded-full text-xs font-semibold text-[#4A5568] hover:bg-[#F8FAF7]"
               >
                 Cancel
               </button>
@@ -1150,7 +1150,7 @@ function DashboardContent() {
                 type="button"
                 onClick={handleSaveDescription}
                 disabled={isUpdating}
-                className="px-5 py-2 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] disabled:opacity-50"
+                className="min-h-[44px] px-5 py-2 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] disabled:opacity-50"
               >
                 {isUpdating ? "Saving..." : "Save Changes"}
               </button>
@@ -1161,14 +1161,14 @@ function DashboardContent() {
 
       {/* DELETE LISTING CONFIRMATION MODAL */}
       {deleteConfirmItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-3xl border border-red-200 p-6 max-w-sm w-full shadow-elevated space-y-4 text-center">
             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
+              <Trash2 className="w-6 h-6 stroke-[1.75]" />
             </div>
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-[#1A201C]">Delete this listing?</h3>
-              <p className="text-xs text-[#65736B]">
+              <p className="text-xs text-[#4A5568]">
                 &ldquo;{deleteConfirmItem.title}&rdquo; will be permanently removed from the public registry.
               </p>
             </div>
@@ -1176,7 +1176,7 @@ function DashboardContent() {
               <button
                 type="button"
                 onClick={() => setDeleteConfirmItem(null)}
-                className="px-4 py-2 rounded-full text-xs font-semibold text-[#65736B] hover:bg-[#F8FAF7]"
+                className="min-h-[44px] px-4 py-2 rounded-full text-xs font-semibold text-[#4A5568] hover:bg-[#F8FAF7]"
               >
                 Cancel
               </button>
@@ -1184,7 +1184,7 @@ function DashboardContent() {
                 type="button"
                 onClick={handleDeleteListing}
                 disabled={isDeleting}
-                className="px-5 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+                className="min-h-[44px] px-5 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : "Yes, Delete"}
               </button>
@@ -1195,14 +1195,14 @@ function DashboardContent() {
 
       {/* DELETE ACCOUNT CONFIRMATION MODAL */}
       {deleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-3xl border border-red-200 p-6 max-w-md w-full shadow-elevated space-y-4 text-center">
             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
+              <Trash2 className="w-6 h-6 stroke-[1.75]" />
             </div>
             <div className="space-y-2">
               <h3 className="text-base font-bold text-red-900">Confirm Account Deletion</h3>
-              <p className="text-xs text-[#65736B] leading-relaxed">
+              <p className="text-xs text-[#4A5568] leading-relaxed">
                 Under Rwanda Law No. 058/2021, clicking proceed will permanently purge your phone records, unredacted files, and listings. This action cannot be undone.
               </p>
             </div>
@@ -1210,7 +1210,7 @@ function DashboardContent() {
               <button
                 type="button"
                 onClick={() => setDeleteAccountModal(false)}
-                className="px-4 py-2 rounded-full text-xs font-semibold text-[#65736B] hover:bg-[#F8FAF7]"
+                className="min-h-[44px] px-4 py-2 rounded-full text-xs font-semibold text-[#4A5568] hover:bg-[#F8FAF7]"
               >
                 Cancel
               </button>
@@ -1218,7 +1218,7 @@ function DashboardContent() {
                 type="button"
                 onClick={handlePurgeAccount}
                 disabled={purgingAccount}
-                className="px-5 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+                className="min-h-[44px] px-5 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
               >
                 {purgingAccount ? "Purging..." : "Permanently Purge Data"}
               </button>

@@ -2,20 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  ShieldCheck, 
-  PlusCircle, 
-  CheckCircle2, 
-  Lock, 
-  Smartphone, 
-  Search,
-  Sparkles,
-  Coins,
-  QrCode,
-  KeyRound,
-  ArrowRight,
-  MapPin
-} from "lucide-react";
+import { Search } from "lucide-react";
 import ItemCatalog from "@/components/ItemCatalog";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
@@ -26,135 +13,145 @@ export default function Home() {
   const { requireAuth } = useAuth();
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-16">
       {/* 1. Hero Section */}
-      <section className="text-center max-w-3xl mx-auto space-y-5 pt-4 pb-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-semibold border border-[#DEEBE5]">
-          <Sparkles className="w-3.5 h-3.5 text-[#10B981]" />
-          <span>Found IN • Your Secure Recovery Solution</span>
-        </div>
-
-        <h1 className="text-[32px] sm:text-[40px] font-bold text-[#1A201C] leading-[40px] sm:leading-[48px] tracking-tight">
-          Recover Lost Documents & Property With Verified Escrow Security
+      <section className="text-center max-w-3xl mx-auto space-y-6 pt-6 pb-2">
+        {/* Floating pill badges above heading removed per UI/UX directive */}
+        <h1 className="text-[32px] sm:text-[46px] font-extrabold text-[#1A201C] leading-[40px] sm:leading-[54px] tracking-tight">
+          Lost Your ID, Wallet, or Keys in Rwanda? Recover Them Safely.
         </h1>
 
-        <p className="text-base text-[#65736B] leading-relaxed max-w-2xl mx-auto">
-          <strong className="text-[#1B4D3E]">Found IN</strong> is Rwanda&apos;s trusted community recovery solution. Finders earn safe delivery rewards, owners verify ownership with confidential challenges, and escrow funds release automatically via QR check-in.
+        <p className="text-base sm:text-lg text-[#4A5568] leading-relaxed max-w-2xl mx-auto font-normal">
+          Search items found across Kigali and beyond. Verify ownership privately, meet at a local sector post, and pay finder rewards safely via MTN MoMo or Airtel Money.
         </p>
 
-        {/* Action Buttons (Standardized plain English) */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        {/* Action Buttons with 44px min height touch targets and decluttered icons */}
+        <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
           <button
             onClick={() => requireAuth(() => router.push("/report-found"))}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1B4D3E] text-white font-medium text-sm hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-soft cursor-pointer"
+            className="inline-flex items-center justify-center min-h-[44px] px-7 py-3 rounded-full bg-[#1B4D3E] text-white font-semibold text-sm hover:bg-[#153D31] active:scale-[0.98] transition-all shadow-soft cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4" />
             <span>{t.reportFoundBtn}</span>
           </button>
 
           <button
             onClick={() => requireAuth(() => router.push("/post-lost"))}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#EBF3EF] text-[#1B4D3E] font-medium text-sm hover:bg-[#DEEBE5] active:scale-[0.98] transition-all cursor-pointer"
+            className="inline-flex items-center justify-center min-h-[44px] px-7 py-3 rounded-full bg-[#EBF3EF] text-[#1B4D3E] font-semibold text-sm hover:bg-[#DEEBE5] active:scale-[0.98] transition-all cursor-pointer border border-[#DEEBE5]"
           >
-            <Coins className="w-4 h-4" />
             <span>{t.postLostBtn}</span>
           </button>
 
           <Link
             href="/search"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-[#1A201C] border border-[#E5E9E4] font-medium text-sm hover:bg-[#F8FAF7] active:scale-[0.98] transition-all"
+            className="inline-flex items-center justify-center gap-2 min-h-[44px] px-7 py-3 rounded-full bg-white text-[#1A201C] border border-[#E5E9E4] font-semibold text-sm hover:bg-[#F8FAF7] active:scale-[0.98] transition-all shadow-2xs"
           >
-            <Search className="w-4 h-4 text-[#65736B]" />
+            <Search className="w-4 h-4 text-[#4A5568] stroke-[1.75]" />
             <span>{t.searchBtn}</span>
           </Link>
         </div>
       </section>
 
-      {/* 2. How It Works in 3 Steps (Consumer-Facing) */}
-      <section id="how-it-works" className="space-y-6">
-        <div className="text-center max-w-xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-            <span>Simple & Secure Process</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A201C] tracking-tight">
+      {/* 2. How It Works: Asymmetrical Staggered Timeline (No Floating Pill Badges) */}
+      <section id="how-it-works" className="max-w-4xl mx-auto space-y-10">
+        <div className="text-center space-y-2 max-w-xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1A201C] tracking-tight">
             How It Works in 3 Easy Steps
           </h2>
-          <p className="text-xs sm:text-sm text-[#65736B]">
+          <p className="text-sm text-[#4A5568] leading-relaxed">
             From reporting to safe in-person reunion, privacy and funds are protected at every stage.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Step 1: Upload Securely */}
-          <div className="bg-white rounded-3xl border border-[#E5E9E4] p-6 shadow-soft space-y-4 relative overflow-hidden flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-bold tracking-wider">
-                  STEP 01
-                </span>
-                <div className="w-10 h-10 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] flex items-center justify-center text-[#1B4D3E]">
-                  <Lock className="w-5 h-5 text-[#1B4D3E]" />
-                </div>
+        {/* Staggered Vertical Step-by-Step Timeline with Numbered Index Badges */}
+        <div className="relative space-y-6 sm:space-y-8 before:absolute before:inset-0 before:left-7 sm:before:left-1/2 before:w-0.5 before:-ml-px before:bg-[#E5E9E4] before:hidden sm:before:block">
+          
+          {/* STEP 01 */}
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
+            <div className="sm:w-1/2 sm:text-right space-y-2 sm:pr-4">
+              <div className="inline-flex sm:hidden items-center justify-center w-10 h-10 rounded-2xl bg-[#1B4D3E] text-white font-mono font-bold text-sm shadow-xs mb-1">
+                01
               </div>
               <h3 className="text-lg font-bold text-[#1A201C]">
-                Upload Securely
+                Upload & Protect Details
               </h3>
-              <p className="text-xs text-[#65736B] leading-relaxed">
-                Found or lost an item? Snap a photo and select a safe sector meeting post (e.g. Police Post or Sector Office). Document numbers are automatically masked (<span className="font-mono text-[#1B4D3E]">119988****521</span>) and photos are blurred for zero-trust privacy.
+              <p className="text-sm text-[#4A5568] leading-relaxed">
+                Snap a photo and select a safe sector meeting point (like a Police Post or Sector Office). National ID numbers are masked (<span className="font-mono text-[#1B4D3E] font-semibold">119988****521</span>) and photos are blurred for zero-trust privacy.
               </p>
             </div>
-            <div className="pt-3 border-t border-[#F8FAF7] flex items-center gap-2 text-xs font-medium text-[#1B4D3E]">
-              <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-              <span>Zero-Trust Auto-Masking</span>
+
+            {/* Center Timeline Node for Desktop */}
+            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-2xl bg-[#1B4D3E] text-white font-mono font-extrabold text-sm shadow-sm ring-4 ring-[#F8FAF7] z-10 shrink-0">
+              01
+            </div>
+
+            <div className="w-full sm:w-1/2 bg-white rounded-3xl border border-[#E5E9E4] p-5 shadow-soft">
+              <div className="flex items-center justify-between text-xs font-semibold text-[#1B4D3E] border-b border-[#F8FAF7] pb-2">
+                <span>Automatic Zero-Trust Safeguard</span>
+                <span className="font-mono text-[#10B981] font-bold">ACTIVE</span>
+              </div>
+              <p className="text-xs text-[#4A5568] mt-2.5 leading-relaxed">
+                Raw photos and sensitive numbers never touch public endpoints until verified.
+              </p>
             </div>
           </div>
 
-          {/* Step 2: Verify Ownership */}
-          <div className="bg-white rounded-3xl border border-[#E5E9E4] p-6 shadow-soft space-y-4 relative overflow-hidden flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-bold tracking-wider">
-                  STEP 02
-                </span>
-                <div className="w-10 h-10 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] flex items-center justify-center text-[#1B4D3E]">
-                  <KeyRound className="w-5 h-5 text-[#1B4D3E]" />
-                </div>
+          {/* STEP 02 (Staggered on Desktop) */}
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
+            <div className="w-full sm:w-1/2 order-2 sm:order-1 bg-white rounded-3xl border border-[#E5E9E4] p-5 shadow-soft">
+              <div className="flex items-center justify-between text-xs font-semibold text-[#1B4D3E] border-b border-[#F8FAF7] pb-2">
+                <span>MoMo Escrow Protection</span>
+                <span className="font-mono text-[#10B981] font-bold">MTN / Airtel</span>
               </div>
-              <h3 className="text-lg font-bold text-[#1A201C]">
-                Verify Ownership
-              </h3>
-              <p className="text-xs text-[#65736B] leading-relaxed">
-                Claimers verify ownership by answering a confidential challenge question set by the finder (e.g. birth sector or serial ending) or visual comparison. Once verified, the delivery fee or reward locks safely into Mobile Money escrow.
+              <p className="text-xs text-[#4A5568] mt-2.5 leading-relaxed">
+                Delivery fee or reward is held safely in escrow. No cash risk for either party.
               </p>
             </div>
-            <div className="pt-3 border-t border-[#F8FAF7] flex items-center gap-2 text-xs font-medium text-[#1B4D3E]">
-              <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-              <span>MoMo Escrow Protection</span>
+
+            {/* Center Timeline Node for Desktop */}
+            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-2xl bg-[#1B4D3E] text-white font-mono font-extrabold text-sm shadow-sm ring-4 ring-[#F8FAF7] z-10 shrink-0 order-1 sm:order-2">
+              02
+            </div>
+
+            <div className="sm:w-1/2 order-1 sm:order-3 space-y-2 sm:pl-4">
+              <div className="inline-flex sm:hidden items-center justify-center w-10 h-10 rounded-2xl bg-[#1B4D3E] text-white font-mono font-bold text-sm shadow-xs mb-1">
+                02
+              </div>
+              <h3 className="text-lg font-bold text-[#1A201C]">
+                Privately Verify Ownership
+              </h3>
+              <p className="text-sm text-[#4A5568] leading-relaxed">
+                The owner answers a confidential challenge question set by the finder (like birth sector or year of issue) or submits visual detail proof. Once confirmed, the agreed reward locks securely into Mobile Money escrow.
+              </p>
             </div>
           </div>
 
-          {/* Step 3: Meet & Release via QR */}
-          <div className="bg-white rounded-3xl border border-[#E5E9E4] p-6 shadow-soft space-y-4 relative overflow-hidden flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-bold tracking-wider">
-                  STEP 03
-                </span>
-                <div className="w-10 h-10 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] flex items-center justify-center text-[#1B4D3E]">
-                  <QrCode className="w-5 h-5 text-[#1B4D3E]" />
-                </div>
+          {/* STEP 03 */}
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
+            <div className="sm:w-1/2 sm:text-right space-y-2 sm:pr-4">
+              <div className="inline-flex sm:hidden items-center justify-center w-10 h-10 rounded-2xl bg-[#1B4D3E] text-white font-mono font-bold text-sm shadow-xs mb-1">
+                03
               </div>
               <h3 className="text-lg font-bold text-[#1A201C]">
-                Meet & Release via QR
+                Meet & Release via QR Check-In
               </h3>
-              <p className="text-xs text-[#65736B] leading-relaxed">
-                Meet safely in person at the designated sector station. The owner inspects their property and scans the finder&apos;s dynamic QR code (or enters the 6-digit backup code). Escrow funds are disbursed instantly to the finder&apos;s phone.
+              <p className="text-sm text-[#4A5568] leading-relaxed">
+                Meet safely in person at the local sector station. After inspecting the item, the owner scans the finder&apos;s dynamic QR code. The escrow deposit releases immediately to the finder&apos;s phone.
               </p>
             </div>
-            <div className="pt-3 border-t border-[#F8FAF7] flex items-center gap-2 text-xs font-medium text-[#1B4D3E]">
-              <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-              <span>Instant Contactless Payout</span>
+
+            {/* Center Timeline Node for Desktop */}
+            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-2xl bg-[#1B4D3E] text-white font-mono font-extrabold text-sm shadow-sm ring-4 ring-[#F8FAF7] z-10 shrink-0">
+              03
+            </div>
+
+            <div className="w-full sm:w-1/2 bg-white rounded-3xl border border-[#E5E9E4] p-5 shadow-soft">
+              <div className="flex items-center justify-between text-xs font-semibold text-[#1B4D3E] border-b border-[#F8FAF7] pb-2">
+                <span>Instant Contactless Payout</span>
+                <span className="font-mono text-[#10B981] font-bold">QR Verified</span>
+              </div>
+              <p className="text-xs text-[#4A5568] mt-2.5 leading-relaxed">
+                Both parties receive immediate SMS confirmation and an official recovery voucher.
+              </p>
             </div>
           </div>
         </div>

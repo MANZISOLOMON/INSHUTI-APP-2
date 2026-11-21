@@ -84,18 +84,18 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-2">
             <Link
               href="/search"
-              className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-[#1A201C] hover:text-[#1B4D3E] hover:bg-[#EBF3EF] rounded-full transition-colors"
+              className="inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2 text-sm font-semibold text-[#1A201C] hover:text-[#1B4D3E] hover:bg-[#EBF3EF] rounded-full transition-colors"
             >
-              <Search className="w-4 h-4 text-[#65736B]" />
+              <Search className="w-4 h-4 text-[#4A5568] stroke-[1.75]" />
               <span>{t.navSearchItems}</span>
             </Link>
 
             {user && (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] rounded-full transition-colors"
+                className="inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2 text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] rounded-full transition-colors"
               >
-                <LayoutDashboard className="w-4 h-4 text-[#1B4D3E]" />
+                <LayoutDashboard className="w-4 h-4 text-[#1B4D3E] stroke-[1.75]" />
                 <span>{t.navMyDashboard}</span>
               </Link>
             )}
@@ -108,12 +108,12 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-[#1A201C] bg-[#F8FAF7] hover:bg-[#EBF3EF] border border-[#E5E9E4] transition-all cursor-pointer"
+                className="inline-flex items-center justify-center min-h-[44px] gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#1A201C] bg-[#F8FAF7] hover:bg-[#EBF3EF] border border-[#E5E9E4] transition-all cursor-pointer"
                 aria-label="Change Language"
               >
-                <Globe className="w-3.5 h-3.5 text-[#1B4D3E]" />
+                <Globe className="w-3.5 h-3.5 text-[#1B4D3E] stroke-[1.75]" />
                 <span className="uppercase">{language}</span>
-                <ChevronDown className="w-3 h-3 text-[#65736B]" />
+                <ChevronDown className="w-3 h-3 text-[#4A5568]" />
               </button>
 
               {langMenuOpen && (
@@ -122,8 +122,8 @@ export default function Navbar() {
                     className="fixed inset-0 z-40" 
                     onClick={() => setLangMenuOpen(false)} 
                   />
-                  <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white border border-[#E5E9E4] shadow-elevated py-2 z-50 animate-fade-in">
-                    <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#65736B] border-b border-[#E5E9E4] mb-1">
+                  <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white border border-[#E5E9E4] shadow-elevated py-2 z-50">
+                    <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#4A5568] border-b border-[#E5E9E4] mb-1">
                       Select Language
                     </div>
                     {languages.map((item) => (
@@ -145,7 +145,7 @@ export default function Navbar() {
                           <span>{item.label}</span>
                         </span>
                         {language === item.code && (
-                          <Check className="w-3.5 h-3.5 text-[#10B981]" />
+                          <Check className="w-3.5 h-3.5 text-[#10B981] stroke-[2]" />
                         )}
                       </button>
                     ))}
@@ -156,13 +156,12 @@ export default function Navbar() {
 
             {/* User State: Unauthenticated Guest vs Logged In */}
             {user === null ? (
-              /* Guest: Clean Sign In Button */
+              /* Guest: Clean Sign In Button (no decorative icon clutter) */
               <button
                 type="button"
                 onClick={() => openAuthModal()}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] border border-[#DEEBE5] transition-all cursor-pointer"
+                className="inline-flex items-center justify-center min-h-[44px] px-5 py-2 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] border border-[#DEEBE5] transition-all cursor-pointer"
               >
-                <LogIn className="w-3.5 h-3.5" />
                 <span>{t.navSignIn}</span>
               </button>
             ) : (
@@ -172,15 +171,15 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold text-[#1A201C] bg-white hover:bg-[#F8FAF7] border border-[#E5E9E4] shadow-2xs transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center min-h-[44px] gap-2 px-3.5 py-2 rounded-full text-xs font-semibold text-[#1A201C] bg-white hover:bg-[#F8FAF7] border border-[#E5E9E4] shadow-2xs transition-all cursor-pointer"
                   >
                     <div className="w-5 h-5 rounded-full bg-[#1B4D3E] text-white flex items-center justify-center text-[10px] font-bold">
-                      <User className="w-3 h-3 text-emerald-300" />
+                      <User className="w-3 h-3 text-emerald-300 stroke-[1.75]" />
                     </div>
                     <span className="font-mono text-[11px] text-[#1A201C]">
                       {user.phone ? user.phone.replace(/(\+\d{3})(\d{3})(\d{3})(\d+)/, "$1 $2 $3 $4") : "Citizen"}
                     </span>
-                    <ChevronDown className="w-3 h-3 text-[#65736B]" />
+                    <ChevronDown className="w-3 h-3 text-[#4A5568]" />
                   </button>
 
                   {profileMenuOpen && (
@@ -189,9 +188,9 @@ export default function Navbar() {
                         className="fixed inset-0 z-40" 
                         onClick={() => setProfileMenuOpen(false)} 
                       />
-                      <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#E5E9E4] shadow-elevated py-2 z-50 animate-fade-in text-xs">
+                      <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#E5E9E4] shadow-elevated py-2 z-50 text-xs">
                         <div className="px-4 py-2 border-b border-[#E5E9E4] bg-[#F8FAF7] rounded-t-2xl">
-                          <p className="text-[10px] font-bold text-[#65736B] uppercase tracking-wider">Signed In As</p>
+                          <p className="text-[10px] font-bold text-[#4A5568] uppercase tracking-wider">Signed In As</p>
                           <p className="font-mono font-semibold text-[#1A201C] truncate">{user.phone}</p>
                         </div>
 
@@ -201,7 +200,7 @@ export default function Navbar() {
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2 text-[#1A201C] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] font-medium transition-colors"
                           >
-                            <Package className="w-4 h-4 text-[#1B4D3E]" />
+                            <Package className="w-4 h-4 text-[#1B4D3E] stroke-[1.75]" />
                             <span>My Active Listings</span>
                           </Link>
 
@@ -210,7 +209,7 @@ export default function Navbar() {
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2 text-[#1A201C] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] font-medium transition-colors"
                           >
-                            <Handshake className="w-4 h-4 text-[#10B981]" />
+                            <Handshake className="w-4 h-4 text-[#10B981] stroke-[1.75]" />
                             <span>Claims & Handovers</span>
                           </Link>
 
@@ -219,7 +218,7 @@ export default function Navbar() {
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2 text-[#1A201C] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] font-medium transition-colors"
                           >
-                            <Wallet className="w-4 h-4 text-[#1B4D3E]" />
+                            <Wallet className="w-4 h-4 text-[#1B4D3E] stroke-[1.75]" />
                             <span>MoMo Escrow Wallet</span>
                           </Link>
 
@@ -228,7 +227,7 @@ export default function Navbar() {
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2 text-[#1A201C] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] font-medium transition-colors"
                           >
-                            <Settings className="w-4 h-4 text-[#65736B]" />
+                            <Settings className="w-4 h-4 text-[#4A5568] stroke-[1.75]" />
                             <span>Account & Privacy Settings</span>
                           </Link>
                         </div>
@@ -239,7 +238,7 @@ export default function Navbar() {
                             onClick={handleSignOut}
                             className="w-full flex items-center gap-2.5 px-4 py-2 text-red-600 hover:bg-red-50 font-semibold transition-colors cursor-pointer text-left"
                           >
-                            <LogOut className="w-4 h-4" />
+                            <LogOut className="w-4 h-4 stroke-[1.75]" />
                             <span>{t.navSignOut}</span>
                           </button>
                         </div>
@@ -252,29 +251,28 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
+                  className="inline-flex items-center justify-center min-h-[44px] gap-1 px-3.5 py-2 rounded-full text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
                   title="Sign Out"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-3.5 h-3.5 stroke-[1.75]" />
                   <span className="hidden lg:inline">{t.navSignOut}</span>
                 </button>
               </div>
             )}
 
-            {/* Post Lost Item Action Pill */}
+            {/* Post Lost Item Action Pill (No decorative icon, 44px min height) */}
             <button
               onClick={() => handleAuthNavigation("/post-lost")}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] transition-all cursor-pointer"
+              className="inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-full text-xs font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] transition-all cursor-pointer border border-[#DEEBE5]"
             >
-              {t.postLostBtn}
+              <span>{t.postLostBtn}</span>
             </button>
 
-            {/* Report Found Item Action Pill */}
+            {/* Report Found Item Action Pill (No decorative icon, 44px min height) */}
             <button
               onClick={() => handleAuthNavigation("/report-found")}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#1B4D3E] hover:bg-[#153D31] shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center justify-center min-h-[44px] px-6 py-2.5 rounded-full text-xs font-semibold text-white bg-[#1B4D3E] hover:bg-[#153D31] shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
               <span>{t.reportFoundBtn}</span>
             </button>
           </div>
@@ -287,7 +285,7 @@ export default function Navbar() {
                 const nextLang: Record<Language, Language> = { en: "fr", fr: "kyr", kyr: "en" };
                 setLanguage(nextLang[language]);
               }}
-              className="px-2.5 py-1 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-bold text-[#1B4D3E] uppercase"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-bold text-[#1B4D3E] uppercase"
               title="Switch language"
             >
               {language}
@@ -295,18 +293,18 @@ export default function Navbar() {
 
             <button
               onClick={() => handleAuthNavigation("/report-found")}
-              className="p-2 rounded-full bg-[#1B4D3E] text-white"
+              className="min-h-[44px] px-3.5 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold"
               aria-label="Report Found Item"
             >
-              <PlusCircle className="w-4 h-4" />
+              <span>Report</span>
             </button>
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-[#1A201C] hover:bg-[#F8FAF7] border border-[#E5E9E4]"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[#1A201C] hover:bg-[#F8FAF7] border border-[#E5E9E4]"
               aria-label="Toggle Navigation"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 stroke-[1.75]" /> : <Menu className="w-5 h-5 stroke-[1.75]" />}
             </button>
           </div>
         </div>
@@ -314,14 +312,14 @@ export default function Navbar() {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="sm:hidden border-t border-[#E5E9E4] bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg animate-fade-in">
+        <div className="sm:hidden border-t border-[#E5E9E4] bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg">
           <div className="space-y-1">
             <Link
               href="/search"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-[#1A201C] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] rounded-xl transition-colors"
+              className="flex items-center min-h-[44px] gap-2 px-3 py-2 text-sm font-semibold text-[#1A201C] hover:bg-[#EBF3EF] hover:text-[#1B4D3E] rounded-xl transition-colors"
             >
-              <Search className="w-4 h-4 text-[#65736B]" />
+              <Search className="w-4 h-4 text-[#4A5568] stroke-[1.75]" />
               <span>{t.navSearchItems}</span>
             </Link>
 
@@ -330,54 +328,54 @@ export default function Navbar() {
                 <Link
                   href="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] rounded-xl transition-colors"
+                  className="flex items-center min-h-[44px] gap-2 px-3 py-2 text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] rounded-xl transition-colors"
                 >
-                  <LayoutDashboard className="w-4 h-4 text-[#1B4D3E]" />
+                  <LayoutDashboard className="w-4 h-4 text-[#1B4D3E] stroke-[1.75]" />
                   <span>{t.navMyDashboard}</span>
                 </Link>
 
                 <Link
                   href="/dashboard?tab=items"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
+                  className="flex items-center min-h-[44px] gap-2 px-3 py-2 text-xs font-semibold text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
                 >
-                  <Package className="w-3.5 h-3.5 text-[#1B4D3E]" />
+                  <Package className="w-3.5 h-3.5 text-[#1B4D3E] stroke-[1.75]" />
                   <span>My Active Listings</span>
                 </Link>
 
                 <Link
                   href="/dashboard?tab=handovers"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
+                  className="flex items-center min-h-[44px] gap-2 px-3 py-2 text-xs font-semibold text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
                 >
-                  <Handshake className="w-3.5 h-3.5 text-[#10B981]" />
+                  <Handshake className="w-3.5 h-3.5 text-[#10B981] stroke-[1.75]" />
                   <span>Claims & Handovers</span>
                 </Link>
 
                 <Link
                   href="/dashboard?tab=wallet"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
+                  className="flex items-center min-h-[44px] gap-2 px-3 py-2 text-xs font-semibold text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
                 >
-                  <Wallet className="w-3.5 h-3.5 text-[#1B4D3E]" />
+                  <Wallet className="w-3.5 h-3.5 text-[#1B4D3E] stroke-[1.75]" />
                   <span>MoMo Escrow Wallet</span>
                 </Link>
 
                 <Link
                   href="/dashboard?tab=settings"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
+                  className="flex items-center min-h-[44px] gap-2 px-3 py-2 text-xs font-semibold text-[#1A201C] hover:bg-[#F8FAF7] rounded-xl pl-6"
                 >
-                  <Settings className="w-3.5 h-3.5 text-[#65736B]" />
+                  <Settings className="w-3.5 h-3.5 text-[#4A5568] stroke-[1.75]" />
                   <span>Account & Privacy Settings</span>
                 </Link>
 
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left"
+                  className="w-full flex items-center min-h-[44px] gap-2 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4 stroke-[1.75]" />
                   <span>{t.navSignOut} ({user.phone})</span>
                 </button>
               </>
@@ -388,21 +386,20 @@ export default function Navbar() {
                   setMobileMenuOpen(false);
                   openAuthModal();
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] rounded-xl transition-colors text-left"
+                className="w-full flex items-center justify-center min-h-[44px] px-4 py-2.5 text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] rounded-xl transition-colors text-center"
               >
-                <LogIn className="w-4 h-4" />
                 <span>{t.navSignIn}</span>
               </button>
             )}
           </div>
 
-          <div className="pt-3 border-t border-[#E5E9E4] flex flex-col gap-2">
+          <div className="pt-3 border-t border-[#E5E9E4] flex flex-col gap-2.5">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 handleAuthNavigation("/post-lost");
               }}
-              className="w-full text-center py-2.5 rounded-full text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] cursor-pointer"
+              className="w-full text-center min-h-[44px] py-2.5 rounded-full text-sm font-semibold text-[#1B4D3E] bg-[#EBF3EF] hover:bg-[#DEEBE5] cursor-pointer border border-[#DEEBE5]"
             >
               {t.postLostBtn}
             </button>
@@ -411,15 +408,14 @@ export default function Navbar() {
                 setMobileMenuOpen(false);
                 handleAuthNavigation("/report-found");
               }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold text-white bg-[#1B4D3E] hover:bg-[#153D31] shadow-sm cursor-pointer"
+              className="w-full flex items-center justify-center min-h-[44px] py-2.5 rounded-full text-sm font-semibold text-white bg-[#1B4D3E] hover:bg-[#153D31] shadow-sm cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
               <span>{t.reportFoundBtn}</span>
             </button>
           </div>
 
-          <div className="pt-2 flex items-center justify-center gap-1.5 text-xs text-[#65736B]">
-            <Smartphone className="w-3.5 h-3.5 text-[#1B4D3E]" />
+          <div className="pt-2 flex items-center justify-center gap-1.5 text-xs text-[#4A5568]">
+            <Smartphone className="w-3.5 h-3.5 text-[#1B4D3E] stroke-[1.75]" />
             <span>PWA Enabled • Add to Home Screen</span>
           </div>
         </div>

@@ -11,7 +11,7 @@
   --secondary: #2E7D5F;
   --border: #E5E9E4;
   --text-main: #1A201C;
-  --text-muted: #65736B;
+  --text-muted: #4A5568;
   --escrow: #10B981;
   --alert: #EF4444;
 }
@@ -56,5 +56,11 @@ body {
   .badge-escrow {
     @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0];
   }
+}
+
+/* Immediate 100% opacity rendering: disable delayed viewport fade-ins */
+.animate-fade-in {
+  animation: none !important;
+  opacity: 1 !important;
 }
 

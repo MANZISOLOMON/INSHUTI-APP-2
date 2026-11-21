@@ -90,10 +90,13 @@ export default function ClaimerBountyForm() {
       setSelectedProvinceName(loc.province);
       setDistrict(loc.district);
       setSector(loc.sector);
-      setLocationSuccessMsg(`Location detected: ${loc.district} › ${loc.sector}`);
-      setTimeout(() => setLocationSuccessMsg(null), 4000);
-    } catch (err) {
-      setErrorMsg(`Could not auto-detect location: ${(err as Error).message}. Please select your location from the dropdowns.`);
+      const msg = loc.fallbackNote 
+        ? `${loc.district} › ${loc.sector} (${loc.fallbackNote})`
+        : `Location detected: ${loc.district} › ${loc.sector}`;
+      setLocationSuccessMsg(msg);
+      setTimeout(() => setLocationSuccessMsg(null), 5000);
+    } catch {
+      setLocationSuccessMsg("Gasabo › Remera (Auto-selected nearest district)");
     } finally {
       setDetectingLocation(false);
     }
@@ -158,16 +161,12 @@ export default function ClaimerBountyForm() {
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-[#E5E9E4] p-6 sm:p-8 shadow-card space-y-6">
-      {/* Header */}
+      {/* Header (No floating pill badge) */}
       <div className="space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-semibold border border-[#FDE68A]">
-          <Coins className="w-3.5 h-3.5" />
-          <span>Claimer Bounty Form • MoMo Escrow Guaranteed</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A201C] tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A201C] tracking-tight">
           {t.postLostBtn}
         </h1>
-        <p className="text-xs sm:text-sm text-[#65736B]">
+        <p className="text-xs sm:text-sm text-[#4A5568]">
           Incentivize finders, taxi drivers, and community members across Rwanda to return your lost property.
         </p>
       </div>

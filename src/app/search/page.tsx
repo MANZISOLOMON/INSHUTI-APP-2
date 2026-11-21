@@ -13,12 +13,12 @@ export default function SearchPage() {
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A201C] tracking-tight">
           Found IN Property & Document Registry
         </h1>
-        <p className="text-xs sm:text-sm text-[#65736B]">
-          Your Secure Recovery Solution • Filter by district, category, or search by masked document identifier.
+        <p className="text-xs sm:text-sm text-[#4A5568]">
+          Filter by district, category, or search by masked document identifier.
         </p>
       </div>
 
-      <Suspense fallback={<div className="text-xs text-[#65736B]">Loading registry catalog...</div>}>
+      <Suspense fallback={<div className="text-xs text-[#4A5568]">Loading registry catalog...</div>}>
         <ItemCatalog />
       </Suspense>
     </div>

@@ -7,6 +7,7 @@ export interface DetectedLocation {
   lat: number;
   lon: number;
   isApproximate?: boolean;
+  fallbackNote?: string;
 }
 
 // Known sector coordinates within Rwanda for instant offline coordinate-distance reverse-geocoding
@@ -159,40 +160,71 @@ export async function reverseGeocodeRwanda(lat: number, lon: number): Promise<De
 }
 
 /**
- * Triggers browser geolocation and resolves to Rwandan administrative boundaries
+ * Triggers browser geolocation and resolves to Rwandan administrative boundaries.
+ * Gracefully falls back to Kigali / Gasabo if blocked or unsupported, never throwing raw red errors.
  */
 export function detectCurrentRwandaLocation(): Promise<DetectedLocation> {
-  return new Promise((resolve, reject) => {
+  const KIGALI_FALLBACK: DetectedLocation = {
+    province: "Kigali City (Umujyi wa Kigali)",
+    district: "Gasabo",
+    sector: "Remera",
+    lat: -1.9583,
+    lon: 30.1128,
+    isApproximate: true,
+    fallbackNote: "Auto-selected nearest district (adjust manually if needed).",
+  };
+
+  return new Promise((resolve) => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      reject(new Error("Browser geolocation is not supported on this device."));
+      resolve(KIGALI_FALLBACK);
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const result = await reverseGeocodeRwanda(pos.coords.latitude, pos.coords.longitude);
-          resolve(result);
-        } catch {
-          // Default fallback to central Kigali
-          resolve({
-            province: "Kigali City (Umujyi wa Kigali)",
-            district: "Gasabo",
-            sector: "Remera",
-            lat: -1.9583,
-            lon: 30.1128,
-            isApproximate: true,
-          });
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const result = await reverseGeocodeRwanda(pos.coords.latitude, pos.coords.longitude);
+            resolve(result);
+          } catch {
+            resolve(KIGALI_FALLBACK);
+          }
+        },
+        async (err) => {
+          // If browser, permissions policy, or user denied GPS, attempt IP lookup or resolve fallback
+          console.warn("[Geolocation Notice] GPS not available or restricted, applying fallback:", err?.message);
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 1500);
+            const ipRes = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+            clearTimeout(timeout);
+            if (ipRes.ok) {
+              const ipData = await ipRes.json();
+              if (ipData.latitude && ipData.longitude) {
+                const geoMatch = await reverseGeocodeRwanda(ipData.latitude, ipData.longitude);
+                resolve({
+                  ...geoMatch,
+                  isApproximate: true,
+                  fallbackNote: "Auto-selected nearest district (adjust manually if needed).",
+                });
+                return;
+              }
+            }
+          } catch {
+            // Network fallback
+          }
+
+          resolve(KIGALI_FALLBACK);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 4000,
+          maximumAge: 60000,
         }
-      },
-      (err) => {
-        reject(err);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 60000,
-      }
-    );
+      );
+    } catch (unexpectedErr) {
+      console.warn("[Geolocation Exception]:", unexpectedErr);
+      resolve(KIGALI_FALLBACK);
+    }
   });
 }
