@@ -39,14 +39,19 @@ export const ItemCreateSchema = z.object({
 });
 
 /**
- * Zod validation schema for Dual Verification (Option C)
+ * Zod validation schema for Mandatory Manual Verification
  */
 export const VerifyClaimSchema = z.object({
   itemId: z.string().trim().min(1, "Item ID is required"),
-  option: z.enum(["CHALLENGE", "VISUAL", "APPROVE"] as const),
+  option: z.enum(["CHALLENGE", "VISUAL", "MANUAL_PROOF", "APPROVE", "REJECT"] as const),
   answer: z.string().trim().max(500).optional(),
   visualNote: z.string().trim().max(1000).optional(),
   notes: z.string().trim().max(1000).optional(),
+  fullName: z.string().trim().max(100).optional(),
+  dateOfBirth: z.string().trim().max(50).optional(),
+  serialEnding: z.string().trim().max(50).optional(),
+  markings: z.string().trim().max(500).optional(),
+  challengeAnswer: z.string().trim().max(500).optional(),
 });
 
 /**

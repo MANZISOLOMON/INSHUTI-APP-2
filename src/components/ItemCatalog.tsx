@@ -23,7 +23,14 @@ import {
   MessageSquare,
   Sparkles
 } from "lucide-react";
-import { ALL_DISTRICTS, KIGALI_DISTRICTS, getSectorsForDistrict } from "@/lib/rwanda-locations";
+import { 
+  RWANDA_LOCATIONS, 
+  PROVINCE_NAMES, 
+  getDistrictsForProvince, 
+  ALL_DISTRICTS, 
+  KIGALI_DISTRICTS, 
+  getSectorsForDistrict 
+} from "@/lib/rwanda-locations";
 import { Item } from "@/types/database";
 import { detectCurrentRwandaLocation } from "@/lib/geolocation";
 import { useLanguage } from "@/context/LanguageContext";
@@ -42,7 +49,7 @@ const POPULAR_KIGALI_SHORTCUTS = [
 
 export default function ItemCatalog({ initialType = "ALL" }: { initialType?: string }) {
   const { t } = useLanguage();
-  const { requireAuth } = useAuth();
+  const { user: currentUser, requireAuth } = useAuth();
 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,9 +63,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
   const [handoverModalOpen, setHandoverModalOpen] = useState(false);
   const [selectedItemForHandover, setSelectedItemForHandover] = useState<Item | null>(null);
 
-  // Filters
+  // Filters (Province → District → Sector)
   const [selectedType, setSelectedType] = useState<string>(initialType);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [selectedProvince, setSelectedProvince] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -75,6 +83,14 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
     { id: "WALLET", label: t.catWallet, icon: CreditCard },
     { id: "KEYS", label: t.catKeys, icon: KeyRound },
   ];
+
+  // Dynamically compute available districts for currently selected province
+  const availableDistricts = useMemo(() => {
+    if (selectedProvince) {
+      return getDistrictsForProvince(selectedProvince);
+    }
+    return ALL_DISTRICTS;
+  }, [selectedProvince]);
 
   // Dynamically compute available sectors for currently selected district
   const availableSectors = useMemo(() => {
@@ -202,10 +218,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
           </div>
         </div>
 
-        {/* Search Bar & Location Filters */}
+        {/* Search Bar & Nationwide Location Filters (Province → District → Sector) */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Keyword Search Input */}
-          <div className="relative sm:col-span-5">
+          <div className="relative sm:col-span-4">
             <Search className="w-4 h-4 text-[#4A5568] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -216,8 +232,29 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
             />
           </div>
 
-          {/* District Selector */}
+          {/* Province Selector */}
           <div className="relative sm:col-span-3">
+            <Compass className="w-4 h-4 text-[#1B4D3E] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={selectedProvince}
+              onChange={(e) => {
+                setSelectedProvince(e.target.value);
+                setSelectedDistrict("");
+                setSelectedSector("");
+              }}
+              className="w-full min-h-[44px] pl-9 pr-8 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-semibold text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 transition-all cursor-pointer appearance-none truncate"
+            >
+              <option value="">All Provinces (Rwanda)</option>
+              {RWANDA_LOCATIONS.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* District Selector (Nationwide) */}
+          <div className="relative sm:col-span-2">
             <MapPin className="w-4 h-4 text-[#1B4D3E] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <select
               value={selectedDistrict}
@@ -225,31 +262,21 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
               className="w-full min-h-[44px] pl-9 pr-8 py-2.5 rounded-full bg-[#F8FAF7] border border-[#E5E9E4] text-xs font-semibold text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20 transition-all cursor-pointer appearance-none truncate"
             >
               <option value="">{t.allDistricts}</option>
-              <optgroup label="── Kigali City ──">
-                {KIGALI_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d} (Kigali)
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="── Other Provinces ──">
-                {ALL_DISTRICTS.filter((d) => !KIGALI_DISTRICTS.includes(d)).map((d) => (
-                  <option key={d} value={d}>
-                    {d} District
-                  </option>
-                ))}
-              </optgroup>
+              {availableDistricts.map((d) => (
+                <option key={d} value={d}>
+                  {d} District
+                </option>
+              ))}
             </select>
           </div>
 
           {/* Sector Selector (Dynamic) */}
-          <div className="relative sm:col-span-3">
-            <Compass className="w-4 h-4 text-[#4A5568] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="relative sm:col-span-2">
             <select
               value={selectedSector}
               onChange={(e) => setSelectedSector(e.target.value)}
               disabled={!selectedDistrict || availableSectors.length === 0}
-              className={`w-full min-h-[44px] pl-9 pr-8 py-2.5 rounded-full border text-xs font-semibold transition-all cursor-pointer appearance-none truncate ${
+              className={`w-full min-h-[44px] px-4 py-2.5 rounded-full border text-xs font-semibold transition-all cursor-pointer appearance-none truncate ${
                 selectedDistrict
                   ? "bg-[#F8FAF7] border-[#E5E9E4] text-[#1A201C] focus:ring-2 focus:ring-[#1B4D3E]/20"
                   : "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
@@ -278,7 +305,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
           </div>
         </div>
 
-        {/* Location Auto-Detect & Quick Shortcuts */}
+        {/* Location Auto-Detect & Quick Province/District Shortcuts */}
         <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
           {/* One-Tap Geolocation Auto-Detect Button (44px min height) */}
           <button
@@ -299,12 +326,43 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
             </span>
           )}
 
-          <span className="text-[#4A5568] font-bold mx-1 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-[#1B4D3E]" />
-            <span>Kigali:</span>
-          </span>
+          {/* Nationwide Province Quick Filter Pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[#4A5568] font-bold mx-1 flex items-center gap-1">
+              <span>Provinces:</span>
+            </span>
+            {RWANDA_LOCATIONS.map((prov) => {
+              const isMatch = selectedProvince === prov.name;
+              return (
+                <button
+                  key={prov.code}
+                  onClick={() => {
+                    if (isMatch) {
+                      setSelectedProvince("");
+                      setSelectedDistrict("");
+                      setSelectedSector("");
+                    } else {
+                      setSelectedProvince(prov.name);
+                      setSelectedDistrict("");
+                      setSelectedSector("");
+                    }
+                  }}
+                  className={`min-h-[44px] px-3.5 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    isMatch
+                      ? "bg-[#1B4D3E] text-white shadow-xs"
+                      : "bg-[#F8FAF7] text-[#1B4D3E] border border-[#DEEBE5] hover:bg-[#EBF3EF]"
+                  }`}
+                >
+                  {prov.code === "KIGALI" ? "Kigali City" : prov.name.split(" ")[0]}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Kigali District Buttons (Touch Target 44px) */}
+          <span className="text-gray-300 mx-1">|</span>
+
+          {/* Kigali District Buttons */}
+          <span className="text-[#4A5568] font-bold mx-1">Kigali:</span>
           {KIGALI_DISTRICTS.map((kd) => {
             const isMatch = selectedDistrict === kd && !selectedSector;
             return (
@@ -322,27 +380,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
             );
           })}
 
-          <span className="text-gray-300 mx-1">|</span>
-
-          {/* Popular Sector Buttons */}
-          {POPULAR_KIGALI_SHORTCUTS.map((item) => {
-            const isMatch = selectedDistrict === item.district && selectedSector === item.sector;
-            return (
-              <button
-                key={item.label}
-                onClick={() => handleQuickShortcut(item.district, item.sector)}
-                className={`min-h-[44px] px-3.5 py-2 rounded-full text-xs transition-all cursor-pointer ${
-                  isMatch
-                    ? "bg-[#1B4D3E] text-white font-semibold shadow-xs"
-                    : "bg-white text-[#4A5568] border border-[#E5E9E4] hover:border-[#1B4D3E] hover:text-[#1B4D3E]"
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-
-          {(selectedDistrict || selectedSector) && (
+          {(selectedProvince || selectedDistrict || selectedSector) && (
             <button
               onClick={clearLocationFilters}
               className="inline-flex items-center min-h-[44px] gap-1 px-3.5 py-2 rounded-full text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors ml-auto cursor-pointer"
@@ -564,7 +602,20 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
 
               {/* Action Buttons (Touch Target 44px min height) */}
               <div className="space-y-2">
-                {item.status === "CLAIMED" ? (
+                {currentUser && (
+                  (item.finderId && item.finderId === currentUser.uid) ||
+                  ((item as unknown as { creatorId?: string }).creatorId === currentUser.uid) ||
+                  ((item as unknown as { contactPhone?: string }).contactPhone === currentUser.phone)
+                ) ? (
+                  /* Finder Self-Claim Guardrail: Replaces Claim button with Manage Listing */
+                  <a
+                    href={`/dashboard?tab=items&highlight=${item.id}`}
+                    className="w-full min-h-[44px] flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-[#EBF3EF] text-[#1B4D3E] border border-[#DEEBE5] text-xs font-bold hover:bg-[#DEEBE5] transition-all cursor-pointer shadow-2xs"
+                  >
+                    <span>Manage Your Listing</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#10B981]" />
+                  </a>
+                ) : item.status === "CLAIMED" ? (
                   <button
                     onClick={() => {
                       setSelectedItemForHandover(item);

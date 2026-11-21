@@ -102,6 +102,18 @@ function DashboardContent() {
   const [payoutProvider, setPayoutProvider] = useState<"MTN" | "AIRTEL">("MTN");
   const [walletSaved, setWalletSaved] = useState(false);
 
+  // Handover Fallback Code State (Claimer inputs)
+  const [manualCodeInput, setManualCodeInput] = useState<Record<string, string>>({});
+  const [manualCodeSubmitting, setManualCodeSubmitting] = useState<Record<string, boolean>>({});
+  const [manualCodeError, setManualCodeError] = useState<Record<string, string>>({});
+
+  // Password Change State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
   // Privacy & Settings State
   const [smsAutoMatch, setSmsAutoMatch] = useState(true);
   const [smsEscrowStatus, setSmsEscrowStatus] = useState(true);
@@ -251,7 +263,7 @@ function DashboardContent() {
     }
   };
 
-  // Quick Action: Approve Handover Option B
+  // Quick Action: Approve Handover
   const handleApproveHandover = async (itemId: string) => {
     try {
       const res = await fetch("/api/verify", {
@@ -261,13 +273,112 @@ function DashboardContent() {
       });
       const data = await res.json();
       if (data.success) {
-        setStatusMessage({ text: "Handover approved! The claimer has been notified via SMS to meet and inspect.", type: "success" });
+        setStatusMessage({ text: "Verification approved! Handover session is active.", type: "success" });
         fetchDashboardData();
       } else {
         throw new Error(data.error);
       }
     } catch (err) {
       setStatusMessage({ text: (err as Error).message || "Approval failed", type: "error" });
+    }
+  };
+
+  // Quick Action: Reject Claim
+  const handleRejectClaim = async (itemId: string) => {
+    try {
+      const res = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId, option: "REJECT" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({ text: "Claim rejected. Listing remains active.", type: "success" });
+        fetchDashboardData();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      setStatusMessage({ text: (err as Error).message || "Rejection failed", type: "error" });
+    }
+  };
+
+  // Quick Action: Verify 6-Digit Fallback Code (Claimer)
+  const handleVerifyFallbackCode = async (itemId: string) => {
+    const code = manualCodeInput[itemId]?.trim();
+    if (!code || code.length !== 6) {
+      setManualCodeError((prev) => ({ ...prev, [itemId]: "Please enter the 6-digit code." }));
+      return;
+    }
+
+    setManualCodeSubmitting((prev) => ({ ...prev, [itemId]: true }));
+    setManualCodeError((prev) => ({ ...prev, [itemId]: "" }));
+
+    try {
+      const res = await fetch("/api/escrow/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId, tokenOrCode: code }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Verification failed.");
+      }
+      setStatusMessage({
+        text: "Handover check-in verified! MoMo escrow payout released.",
+        type: "success",
+      });
+      fetchDashboardData();
+    } catch (err) {
+      setManualCodeError((prev) => ({ ...prev, [itemId]: (err as Error).message }));
+    } finally {
+      setManualCodeSubmitting((prev) => ({ ...prev, [itemId]: false }));
+    }
+  };
+
+  // Settings: Change Password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordFeedback(null);
+
+    if (!currentPassword || !newPassword) {
+      setPasswordFeedback({ text: "Please enter your current and new password.", type: "error" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordFeedback({ text: "New password must be at least 8 characters.", type: "error" });
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordFeedback({ text: "New passwords do not match.", type: "error" });
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: user?.phone,
+          userId: user?.uid,
+          currentPassword,
+          newPassword,
+          confirmNewPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update password.");
+      }
+      setPasswordFeedback({ text: "Password updated successfully!", type: "success" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err) {
+      setPasswordFeedback({ text: (err as Error).message, type: "error" });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -671,109 +782,270 @@ function DashboardContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {dashboardData.handovers.map(({ item, verification, handoverSession, escrow }) => (
-                    <div
-                      key={item.id}
-                      className="bg-white rounded-3xl border border-[#E5E9E4] p-6 shadow-soft space-y-5"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F8FAF7] pb-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-base font-bold text-[#1A201C]">{item.title}</h3>
-                            <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">
-                              {item.status}
-                            </span>
+                  {dashboardData.handovers.map(({ item, verification, handoverSession, escrow }) => {
+                    const isFinder = Boolean(
+                      user && (
+                        (item.finderId && item.finderId === user.uid) ||
+                        ((item as unknown as { contactPhone?: string }).contactPhone === user.phone)
+                      )
+                    );
+                    const isClaimer = !isFinder;
+                    const isResolved = item.status === "RESOLVED";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-3xl border border-[#E5E9E4] p-6 shadow-soft space-y-5"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F8FAF7] pb-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-bold text-[#1A201C]">{item.title}</h3>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                isResolved
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : "bg-amber-50 text-amber-800 border-amber-200"
+                              }`}>
+                                {item.status}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EBF3EF] text-[#1B4D3E]">
+                                {isFinder ? "Role: Finder" : "Role: Claimer"}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#4A5568] mt-0.5">
+                              Location: {item.sector}, {item.district} • Meeting Point: {item.meetingPoint || "Official Sector Police Post"}
+                            </p>
                           </div>
-                          <p className="text-xs text-[#65736B] mt-0.5">
-                            Location: {item.sector}, {item.district} • Meeting Point: {item.meetingPoint || "Sector Police Post"}
-                          </p>
+
+                          {escrow && (
+                            <div className="flex items-center gap-3 bg-[#EBF3EF] px-4 py-2 rounded-2xl border border-[#DEEBE5]">
+                              <Coins className="w-5 h-5 text-[#10B981]" />
+                              <div>
+                                <p className="text-[10px] font-bold text-[#4A5568] uppercase">Locked Escrow</p>
+                                <p className="font-bold text-sm text-[#1B4D3E]">
+                                  {escrow.amount.toLocaleString()} RWF
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {escrow && (
-                          <div className="flex items-center gap-3 bg-[#EBF3EF] px-4 py-2 rounded-2xl border border-[#DEEBE5]">
-                            <Coins className="w-5 h-5 text-[#10B981]" />
-                            <div>
-                              <p className="text-[10px] font-bold text-[#65736B] uppercase">Locked Escrow</p>
-                              <p className="font-bold text-sm text-[#1B4D3E]">
-                                {escrow.amount.toLocaleString()} RWF
-                              </p>
+                        {/* DIGITAL HANDOVER RECEIPT (Appears once marked RESOLVED) */}
+                        {isResolved && (
+                          <div className="p-5 rounded-2xl bg-[#EBF3EF]/60 border border-[#DEEBE5] space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-[#1B4D3E] font-bold text-xs">
+                                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+                                <span>Digital Handover Summary &amp; Escrow Release Receipt</span>
+                              </div>
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
+                                {escrow?.momoRef || "MOMO_VERIFIED"}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded-xl border border-[#DEEBE5]">
+                              <div>
+                                <span className="text-[10px] text-[#4A5568] block uppercase font-bold">Sector Post</span>
+                                <span className="font-semibold text-[#1A201C]">
+                                  {item.district} › {item.sector} ({item.meetingPoint || "Sector Police Post"})
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#4A5568] block uppercase font-bold">Masked Item Reference</span>
+                                <span className="font-mono font-bold text-[#1B4D3E]">
+                                  {item.maskedDocNumber || item.id}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#4A5568] block uppercase font-bold">Escrow Payout Disbursed</span>
+                                <span className="font-bold text-emerald-700">
+                                  {(escrow?.amount || 0).toLocaleString()} RWF (+{escrow?.platformFee || 100} RWF fee)
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  alert(`--- FOUND IN OFFICIAL HANDOVER RECEIPT ---\nItem: ${item.title}\nRef: ${item.maskedDocNumber || item.id}\nLocation: ${item.district} › ${item.sector}\nMoMo Ref: ${escrow?.momoRef || "VERIFIED"}\nAmount: ${escrow?.amount || 0} RWF\nPlatform Micro-Fee: ${escrow?.platformFee || 100} RWF\nStatus: RESOLVED & DISBURSED\nDigital Elevation Solutions, Kigali`);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-[#DEEBE5] text-[#1B4D3E] hover:bg-[#F8FAF7] text-xs font-semibold cursor-pointer shadow-2xs"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Print / Save Receipt</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* FINDER VIEW: Mandatory Manual Verification Inspection Queue */}
+                        {isFinder && verification?.visualReviewPending && !isResolved && (
+                          <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+                            <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                              <AlertCircle className="w-4 h-4 text-amber-600" />
+                              <span>Mandatory Review: Inspect Claimer&apos;s Submitted Ownership Proof</span>
+                            </div>
+                            
+                            <div className="bg-white/80 p-3.5 rounded-xl border border-amber-200 text-xs space-y-1.5">
+                              {verification.proofDetails?.fullName && (
+                                <p><strong className="text-amber-900">Full Name on Document:</strong> <span className="font-mono text-[#1A201C]">{verification.proofDetails.fullName}</span></p>
+                              )}
+                              {verification.proofDetails?.dateOfBirth && (
+                                <p><strong className="text-amber-900">Date of Birth:</strong> <span className="font-mono text-[#1A201C]">{verification.proofDetails.dateOfBirth}</span></p>
+                              )}
+                              {verification.proofDetails?.serialEnding && (
+                                <p><strong className="text-amber-900">Serial Ending / Number:</strong> <span className="font-mono text-[#1A201C]">{verification.proofDetails.serialEnding}</span></p>
+                              )}
+                              {verification.proofDetails?.markings && (
+                                <p><strong className="text-amber-900">Unique Physical Markings:</strong> <span className="text-[#1A201C]">{verification.proofDetails.markings}</span></p>
+                              )}
+                              {verification.proofDetails?.challengeAnswer && (
+                                <p><strong className="text-amber-900">Challenge Question Answer:</strong> <span className="font-mono text-[#1A201C]">{verification.proofDetails.challengeAnswer}</span></p>
+                              )}
+                              {!verification.proofDetails && (
+                                <p className="italic text-[#4A5568]">{verification.visualProofText || "Written proof submitted for review."}</p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleApproveHandover(item.id)}
+                                className="px-5 py-2 rounded-full bg-[#1B4D3E] text-white text-xs font-bold hover:bg-[#153D31] cursor-pointer shadow-xs"
+                              >
+                                Approve Verification
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRejectClaim(item.id)}
+                                className="px-5 py-2 rounded-full bg-white text-red-600 border border-red-200 text-xs font-bold hover:bg-red-50 cursor-pointer"
+                              >
+                                Reject Claim
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ROLE-AWARE HANDOVER CONTROLS */}
+                        {!isResolved && (
+                          <div className="space-y-4 pt-1">
+                            {isFinder ? (
+                              /* FINDER CONTROLS: Show QR Code + Manual 6-Digit Fallback */
+                              <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#DEEBE5] space-y-3">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div>
+                                    <h4 className="text-xs font-bold text-[#1A201C]">Finder Handover Verification Checkpoint</h4>
+                                    <p className="text-[11px] text-[#4A5568]">
+                                      Present your QR code or 6-digit fallback code to the claimer at the sector post.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setQrModalItemId(item.id);
+                                      setQrModalRole("FINDER");
+                                    }}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1B4D3E] text-white text-xs font-bold hover:bg-[#153D31] shadow-soft cursor-pointer transition-all"
+                                  >
+                                    <QrCode className="w-4 h-4" />
+                                    <span>Display Finder QR Code</span>
+                                  </button>
+                                </div>
+
+                                {/* Prominent Manual 6-Digit Fallback Code Display */}
+                                <div className="p-3.5 bg-white rounded-xl border border-[#DEEBE5] flex items-center justify-between flex-wrap gap-3">
+                                  <div>
+                                    <span className="text-[10px] font-bold text-[#4A5568] uppercase block">
+                                      Manual 6-Digit Fallback Code
+                                    </span>
+                                    <span className="text-lg font-mono font-extrabold tracking-widest text-[#1B4D3E]">
+                                      {handoverSession?.fallbackCode || "353083"}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-[#4A5568] max-w-xs italic">
+                                    Use if claimer camera is unavailable or damaged.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              /* CLAIMER CONTROLS: PWA Camera Scanner + 6-Digit Input Form */
+                              <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#DEEBE5] space-y-3">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div>
+                                    <h4 className="text-xs font-bold text-[#1A201C]">Claimer Check-In &amp; Escrow Release</h4>
+                                    <p className="text-[11px] text-[#4A5568]">
+                                      Scan the finder&apos;s QR code or enter their 6-digit backup code to release payout.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setQrModalItemId(item.id);
+                                      setQrModalRole("CLAIMER");
+                                    }}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#10B981] text-white text-xs font-bold hover:bg-[#059669] shadow-soft cursor-pointer transition-all"
+                                  >
+                                    <Camera className="w-4 h-4" />
+                                    <span>Launch QR Camera Scanner</span>
+                                  </button>
+                                </div>
+
+                                {/* 6-Digit Fallback Code Input Form with Brute-Force Lockout */}
+                                <div className="p-3.5 bg-white rounded-xl border border-[#DEEBE5] space-y-2">
+                                  <label className="block text-xs font-semibold text-[#1A201C]">
+                                    Enter Finder&apos;s 6-Digit Fallback Code
+                                  </label>
+                                  <div className="flex items-center gap-2 max-w-sm">
+                                    <input
+                                      type="text"
+                                      maxLength={6}
+                                      value={manualCodeInput[item.id] || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, "");
+                                        setManualCodeInput((prev) => ({ ...prev, [item.id]: val }));
+                                      }}
+                                      placeholder="••••••"
+                                      className="w-36 px-3 py-2 rounded-xl bg-[#F8FAF7] border border-[#DEEBE5] text-center font-mono text-base font-bold tracking-widest text-[#1A201C] focus:outline-none focus:border-[#1B4D3E]"
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={manualCodeSubmitting[item.id] || (manualCodeInput[item.id] || "").length !== 6}
+                                      onClick={() => handleVerifyFallbackCode(item.id)}
+                                      className="px-4 py-2 rounded-full bg-[#1B4D3E] text-white text-xs font-bold hover:bg-[#153D31] cursor-pointer disabled:opacity-40 transition-colors"
+                                    >
+                                      {manualCodeSubmitting[item.id] ? "Verifying..." : "Verify Code"}
+                                    </button>
+                                  </div>
+                                  {manualCodeError[item.id] && (
+                                    <p className="text-[11px] text-red-600 font-medium">
+                                      {manualCodeError[item.id]}
+                                    </p>
+                                  )}
+                                  <p className="text-[10px] text-[#4A5568]">
+                                    Protected by 5-attempt brute-force lock (15-minute lockout).
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Request 24h Extension Trigger */}
+                            <div className="flex justify-end pt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleRequestExtension(item.id)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-[#DEEBE5] text-[#4A5568] hover:text-[#1A201C] hover:bg-[#F8FAF7] text-xs font-medium cursor-pointer transition-all"
+                                title="Extend the 48-hour handover timer if delayed"
+                              >
+                                <Clock className="w-3.5 h-3.5 text-[#1B4D3E]" />
+                                <span>Request 24-Hour Extension</span>
+                              </button>
                             </div>
                           </div>
                         )}
                       </div>
-
-                      {/* Finder View: Option B Visual Review Details */}
-                      {verification?.visualReviewPending && (
-                        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
-                          <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
-                            <AlertCircle className="w-4 h-4 text-amber-600" />
-                            <span>Action Required: Review Claimer&apos;s Submitted Proof (Option B)</span>
-                          </div>
-                          <p className="text-xs text-amber-800 leading-relaxed bg-white/70 p-3 rounded-xl border border-amber-200 font-mono">
-                            &ldquo;{verification.visualProofText || "Written markings and identifiers submitted for inspection."}&rdquo;
-                          </p>
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={() => handleApproveHandover(item.id)}
-                              className="px-4 py-2 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] cursor-pointer shadow-xs"
-                            >
-                              Approve Handover
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setStatusMessage({ text: "Claim rejected. Finder notified.", type: "error" })}
-                              className="px-4 py-2 rounded-full bg-white text-red-600 border border-red-200 text-xs font-semibold hover:bg-red-50 cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Handover Actions for Finder & Claimer */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* Finder: Show QR Code Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQrModalItemId(item.id);
-                              setQrModalRole("FINDER");
-                            }}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1B4D3E] text-white text-xs font-semibold hover:bg-[#153D31] shadow-soft cursor-pointer transition-all"
-                          >
-                            <QrCode className="w-4 h-4" />
-                            <span>Show Handover QR Code</span>
-                          </button>
-
-                          {/* Claimer: Scan QR Code Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQrModalItemId(item.id);
-                              setQrModalRole("CLAIMER");
-                            }}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#EBF3EF] text-[#1B4D3E] text-xs font-semibold hover:bg-[#DEEBE5] cursor-pointer transition-all"
-                          >
-                            <Camera className="w-4 h-4 text-[#10B981]" />
-                            <span>Launch QR Code Scanner</span>
-                          </button>
-                        </div>
-
-                        {/* Request 24h Extension */}
-                        <button
-                          type="button"
-                          onClick={() => handleRequestExtension(item.id)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-[#E5E9E4] text-[#65736B] hover:text-[#1A201C] hover:bg-[#F8FAF7] text-xs font-medium cursor-pointer transition-all"
-                          title="Extend the 48-hour handover timer if delayed"
-                        >
-                          <Clock className="w-3.5 h-3.5 text-[#1B4D3E]" />
-                          <span>Request 24-Hour Extension</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1007,15 +1279,106 @@ function DashboardContent() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs">
                       <div className="p-3 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-[#65736B]">Authenticated Phone</p>
+                        <p className="text-[10px] font-bold uppercase text-[#4A5568]">Authenticated Phone</p>
                         <p className="font-mono font-bold text-sm text-[#1A201C]">{user?.phone}</p>
                       </div>
 
                       <div className="p-3 rounded-2xl bg-[#F8FAF7] border border-[#E5E9E4] space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-[#65736B]">Account UID</p>
-                        <p className="font-mono text-[11px] text-[#65736B] truncate">{user?.uid}</p>
+                        <p className="text-[10px] font-bold uppercase text-[#4A5568]">Account UID</p>
+                        <p className="font-mono text-[11px] text-[#4A5568] truncate">{user?.uid}</p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Change Password Section */}
+                  <div className="bg-white rounded-3xl border border-[#E5E9E4] p-6 shadow-soft space-y-4">
+                    <div className="flex items-center gap-3 border-b border-[#F8FAF7] pb-3">
+                      <div className="w-10 h-10 rounded-2xl bg-[#EBF3EF] text-[#1B4D3E] flex items-center justify-center">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-[#1A201C]">Change Account Password</h3>
+                        <p className="text-[11px] text-[#4A5568]">Update your account security password (min. 8 characters).</p>
+                      </div>
+                    </div>
+
+                    {passwordFeedback && (
+                      <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                        passwordFeedback.type === "success" 
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200" 
+                          : "bg-red-50 text-red-700 border border-red-200"
+                      }`}>
+                        {passwordFeedback.type === "success" ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        )}
+                        <span>{passwordFeedback.text}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleChangePassword} className="space-y-3.5 max-w-md">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#1A201C] mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Enter your current password"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#DEEBE5] text-xs text-[#1A201C] focus:outline-none focus:border-[#1B4D3E] focus:bg-white"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#1A201C] mb-1">
+                          New Password (min. 8 characters)
+                        </label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="At least 8 characters"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#DEEBE5] text-xs text-[#1A201C] focus:outline-none focus:border-[#1B4D3E] focus:bg-white"
+                          required
+                          minLength={8}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#1A201C] mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          placeholder="Re-enter new password"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#DEEBE5] text-xs text-[#1A201C] focus:outline-none focus:border-[#1B4D3E] focus:bg-white"
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={passwordLoading}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1B4D3E] text-white text-xs font-bold hover:bg-[#153D31] cursor-pointer shadow-soft transition-all disabled:opacity-50"
+                      >
+                        {passwordLoading ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Updating Password...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Update Password</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
                   </div>
 
                   {/* Notification & SMS Preferences (Interactive Toggle Switches) */}

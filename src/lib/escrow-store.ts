@@ -14,36 +14,15 @@ const LOCAL_HANDOVER_FILE = path.join(LOCAL_DATA_DIR, "handover_sessions.json");
 
 export interface ExtendedHandoverSession extends HandoverSession {
   fallbackCode: string; // 6-digit numeric backup
+  failedCodeAttempts?: number; // Max 5 attempts
+  lockedUntil?: number; // 15-minute lock expiration timestamp
   finderPhone?: string;
   claimerPhone?: string;
 }
 
-const DEFAULT_SEED_ESCROWS: EscrowTransaction[] = [
-  {
-    id: "escrow_item_1794556370102_39756495_1794657039043",
-    itemId: "item_1794556370102_39756495",
-    payerId: "verified_claimer",
-    recipientId: null,
-    amount: 2500,
-    platformFee: 100,
-    totalLocked: 2600,
-    momoRef: "MOMO_COLL_1794657039035_FFA239",
-    status: "LOCKED",
-    createdAt: "2026-11-14T11:50:39.042Z"
-  }
-];
+const DEFAULT_SEED_ESCROWS: EscrowTransaction[] = [];
 
-const DEFAULT_SEED_HANDOVERS: ExtendedHandoverSession[] = [
-  {
-    id: "handover_item_1794556370102_39756495",
-    itemId: "item_1794556370102_39756495",
-    qrToken: "qr_token_item_1794556370102_39756495_36f0e4bd828f0c96",
-    fallbackCode: "353083",
-    status: "PENDING",
-    expiresAt: "2026-11-16T11:50:39.042Z",
-    claimerPhone: "+250788123456"
-  }
-];
+const DEFAULT_SEED_HANDOVERS: ExtendedHandoverSession[] = [];
 
 function ensureLocalDir() {
   try {
@@ -348,4 +327,45 @@ export async function extendHandoverSession(
 
   await persistHandoverSession(session);
   return { success: true, newExpiresAt };
+}
+
+/**
+ * Records a failed 6-digit fallback attempt and locks for 15 minutes if >= 5 attempts
+ */
+export async function recordFailedFallbackAttempt(
+  itemId: string
+): Promise<{ isLocked: boolean; attemptsRemaining: number; waitMinutes?: number }> {
+  const session = await getHandoverSessionByItemId(itemId);
+  if (!session) {
+    return { isLocked: false, attemptsRemaining: 5 };
+  }
+
+  const now = Date.now();
+  const currentAttempts = (session.failedCodeAttempts || 0) + 1;
+  const isLocked = currentAttempts >= 5;
+
+  session.failedCodeAttempts = currentAttempts;
+  if (isLocked) {
+    session.lockedUntil = now + 15 * 60 * 1000; // 15-minute lockout
+  }
+
+  await persistHandoverSession(session);
+
+  return {
+    isLocked,
+    attemptsRemaining: Math.max(0, 5 - currentAttempts),
+    waitMinutes: isLocked ? 15 : undefined,
+  };
+}
+
+/**
+ * Resets fallback attempt counters on successful check-in
+ */
+export async function resetFallbackAttempts(itemId: string): Promise<void> {
+  const session = await getHandoverSessionByItemId(itemId);
+  if (session) {
+    session.failedCodeAttempts = 0;
+    session.lockedUntil = undefined;
+    await persistHandoverSession(session);
+  }
 }

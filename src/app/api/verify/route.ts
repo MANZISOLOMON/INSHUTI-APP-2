@@ -5,10 +5,11 @@ import { sendSmsAlert } from "@/lib/sms";
 import { VerifyClaimSchema } from "@/lib/validations";
 import { applyRateLimit } from "@/lib/rate-limiter";
 import { generateSignedRawUrl } from "@/lib/redact";
+import { ProofDetails } from "@/types/database";
 
 /**
  * GET /api/verify?itemId=...
- * Returns verification details (secret challenge prompt) for an item without leaking secrets.
+ * Returns verification status and details without leaking private data.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const verification = await getVerificationByItemId(itemId);
 
-    // If already verified, generate a 15-minute signed URL and return unlocked details
+    // If approved by finder, return unlocked details
     if (verification?.isVerified) {
       const rawItem = item as unknown as { contactPhone?: string };
       const signedRawUrl = await generateSignedRawUrl(itemId, 15);
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         isVerified: true,
+        reviewPending: false,
         secretPrompt: verification.secretPrompt,
         unlockedDetails: {
           privateRawUrl: signedRawUrl,
@@ -56,10 +58,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       isVerified: false,
+      reviewPending: Boolean(verification?.visualReviewPending),
       isLocked: Boolean(verification?.isLocked),
       attemptsRemaining: Math.max(0, 3 - (verification?.failedAttempts || 0)),
       secretPrompt: verification?.secretPrompt || "What is a distinguishing secret detail on this item?",
       hasChallengePrompt: Boolean(verification?.secretPrompt),
+      proofDetails: verification?.proofDetails || null,
     });
   } catch (error) {
     console.error("[API Verify GET Error]:", error);
@@ -72,15 +76,15 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/verify
- * Dual Verification (Option C) handler:
- * Option A (Challenge Question with 3-attempt brute-force lock) OR Option B (Visual Photo Check).
+ * Mandatory Manual Ownership Verification:
+ * Zero Auto-Approvals. All submissions require Finder approval on their dashboard.
  */
 export async function POST(request: NextRequest) {
   try {
     const rateLimitError = applyRateLimit(request, "verify_post", 15, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const validation = VerifyClaimSchema.safeParse(body);
 
     if (!validation.success) {
@@ -94,8 +98,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { itemId, option, answer } = validation.data;
-    const { claimerId } = body;
+    const { itemId, option, answer, visualNote, notes, fullName, dateOfBirth, serialEnding, markings } = validation.data;
+    const { claimerId, finderId } = body;
 
     const item = await getItemById(itemId);
     if (!item) {
@@ -106,133 +110,62 @@ export async function POST(request: NextRequest) {
     }
 
     const verification = await getVerificationByItemId(itemId);
+    const rawItem = item as unknown as { contactPhone?: string; finderId?: string };
 
-    // 1. OPTION A: Secret Challenge Q&A with Brute-Force Protection
-    if (option === "CHALLENGE") {
-      const currentAttempts = verification?.failedAttempts || 0;
+    // 1. CLAIMER SUBMITS MANDATORY MANUAL VERIFICATION (Zero Auto-Approvals)
+    if (option === "CHALLENGE" || option === "VISUAL" || option === "MANUAL_PROOF") {
+      const challengeAns = (answer || body.challengeAnswer || "").trim();
+      const userFullName = (fullName || body.fullName || "").trim();
+      const userDob = (dateOfBirth || body.dateOfBirth || "").trim();
+      const userSerial = (serialEnding || body.serialEnding || "").trim();
+      const userMarkings = (markings || visualNote || notes || body.markings || "").trim();
 
-      // Lockout check: max 3 attempts
-      if (verification?.isLocked || currentAttempts >= 3) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Verification locked: Maximum 3 secret challenge attempts exceeded. Please contact the Finder or Admin.",
-          },
-          { status: 429 }
-        );
-      }
-
-      if (!answer || typeof answer !== "string") {
-        return NextResponse.json(
-          { success: false, error: "Please enter your answer to the secret challenge." },
-          { status: 400 }
-        );
-      }
-
-      if (!verification?.secretAnswerHash) {
-        return NextResponse.json(
-          {
-            success: false,
-            verified: false,
-            error: "No secret challenge question is registered for this item. Please use Option B (Visual Verification) or contact the Finder.",
-          },
-          { status: 400 }
-        );
-      }
-
-      const computedHash = crypto
-        .createHash("sha256")
-        .update(answer.trim().toLowerCase())
-        .digest("hex");
-
-      if (computedHash !== verification.secretAnswerHash) {
-        const newAttempts = currentAttempts + 1;
-        const isLocked = newAttempts >= 3;
-
-        await updateItemVerification(itemId, {
-          failedAttempts: newAttempts,
-          isLocked,
-        });
-
+      // Require specific proof details
+      if (!userFullName && !userSerial && !userMarkings && !challengeAns) {
         return NextResponse.json(
           { 
             success: false, 
-            verified: false, 
-            error: isLocked
-              ? "Incorrect answer. Maximum 3 attempts exceeded. Option A is now locked for security."
-              : `The answer provided did not match the secret challenge. ${3 - newAttempts} attempt(s) remaining.`,
-            attemptsRemaining: Math.max(0, 3 - newAttempts),
-          },
-          { status: 401 }
-        );
-      }
-
-      // Verification Passed via Option A! Reset attempts & generate short-lived signed URL
-      const signedRawUrl = await generateSignedRawUrl(itemId, 15);
-
-      const updateResult = await updateItemVerification(
-        itemId,
-        {
-          isVerified: true,
-          verifiedBy: claimerId || "verified_claimer",
-          failedAttempts: 0,
-          isLocked: false,
-        },
-        true // Shifts status to 'CLAIMED' and starts 48h handover timer
-      );
-
-      const rawItem = updateResult.item as unknown as { contactPhone?: string };
-
-      // Dispatch SMS alert to finder
-      if (rawItem?.contactPhone) {
-        await sendSmsAlert({
-          to: rawItem.contactPhone,
-          message: `Inshuti Found Alert: A claimer has successfully passed the Secret Challenge for your found item '${item.title}'. 48-hour handover timer is active.`,
-          type: "HANDOVER_REMINDER",
-          userId: itemId,
-        });
-      }
-
-      return NextResponse.json({
-        success: true,
-        verified: true,
-        method: "CHALLENGE",
-        message: "Dual Verification passed! Private image and finder contact details unlocked for 15 minutes.",
-        unlockedDetails: {
-          privateRawUrl: signedRawUrl,
-          meetingPoint: item.meetingPoint,
-          contactPhone: rawItem?.contactPhone || "+250 788 000 000 (Safe Handover)",
-          claimedAt: updateResult.item?.claimedAt,
-        },
-      });
-    }
-
-    // 2. OPTION B: Visual Photo Compare & Written Proof Inspection
-    if (option === "VISUAL") {
-      const visualNote = body.visualNote || body.notes || body.answer || "";
-      if (!visualNote || typeof visualNote !== "string" || visualNote.trim().length < 3) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Please provide written proof details (e.g., middle names, issuing date, distinct marks) for the finder to inspect.",
+            error: "Please provide specific ownership proof details (such as full name on document, serial ending, physical marks, or challenge answer) for the finder to inspect." 
           },
           { status: 400 }
         );
       }
 
-      // Record visual proof details on verification document
+      const proofDetails: ProofDetails = {
+        fullName: userFullName || undefined,
+        dateOfBirth: userDob || undefined,
+        serialEnding: userSerial || undefined,
+        markings: userMarkings || undefined,
+        challengeAnswer: challengeAns || undefined,
+        submittedAt: new Date().toISOString(),
+      };
+
+      // Check if challenge answer matches if finder had set one (recorded for finder visibility)
+      let challengeMatched = false;
+      if (verification?.secretAnswerHash && challengeAns) {
+        const computedHash = crypto
+          .createHash("sha256")
+          .update(challengeAns.toLowerCase())
+          .digest("hex");
+        challengeMatched = computedHash === verification.secretAnswerHash;
+      }
+
+      // STRICT ZERO AUTO-APPROVAL RULE:
+      // Even if challenge matches, keep item locked and set reviewPending = true
       await updateItemVerification(itemId, {
-        visualProofText: visualNote.trim(),
         visualReviewPending: true,
+        visualProofText: `Full Name: ${userFullName || "N/A"} | Serial Ending: ${userSerial || "N/A"} | Marks: ${userMarkings || "N/A"}${challengeAns ? ` | Challenge Ans: ${challengeAns}` : ""}`,
+        proofDetails,
+        verifiedBy: claimerId || "pending_claimer",
+        isVerified: false, // Locked until finder manually approves!
       });
 
-      const rawItem = item as unknown as { contactPhone?: string };
-
-      // Dispatch SMS alert to finder
-      if (rawItem?.contactPhone) {
+      // Dispatch SMS to finder alerting them to review the proof on their dashboard
+      const finderPhone = rawItem?.contactPhone;
+      if (finderPhone) {
         await sendSmsAlert({
-          to: rawItem.contactPhone,
-          message: `Inshuti Found Alert: A claimer submitted visual proof for your item '${item.title}': "${visualNote.trim().slice(0, 45)}...". Please review to approve handover.`,
+          to: finderPhone,
+          message: `Found IN: A citizen submitted ownership proof for your listing '${item.title}'. Log in to your dashboard to inspect their details and approve handover.`,
           type: "HANDOVER_REMINDER",
           userId: itemId,
         });
@@ -241,13 +174,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         verified: false,
-        reviewPending: true,
-        method: "VISUAL",
-        message: "Visual proof details submitted to the finder! An automated SMS alert was dispatched. Once approved, the handover details will unlock.",
+        pendingReview: true,
+        message: "Ownership proof submitted successfully! The finder will manually review your proof details on their dashboard before unlocking meetup details.",
       });
     }
 
-    // 3. FINDER OR ADMIN APPROVAL OF OPTION B HANDOVER
+    // 2. FINDER EXPLICITLY APPROVES VERIFICATION
     if (option === "APPROVE") {
       const signedRawUrl = await generateSignedRawUrl(itemId, 15);
 
@@ -257,19 +189,20 @@ export async function POST(request: NextRequest) {
           visualPassed: true,
           visualReviewPending: false,
           isVerified: true,
-          verifiedBy: claimerId || "approved_by_finder",
+          verifiedAt: new Date().toISOString(),
           failedAttempts: 0,
           isLocked: false,
         },
         true // Shifts status to 'CLAIMED' and starts 48h handover timer
       );
 
-      const rawItem = updateResult.item as unknown as { contactPhone?: string };
-
-      if (rawItem?.contactPhone) {
+      // Notify Claimer via SMS if claimer phone is available
+      const claimerUid = verification?.verifiedBy;
+      if (claimerUid) {
+        // We log the notification
         await sendSmsAlert({
-          to: rawItem.contactPhone,
-          message: `Inshuti Found Alert: You approved handover for '${item.title}'. 48-hour handover timer is active.`,
+          to: rawItem?.contactPhone || "+250788000000",
+          message: `Found IN: Verification approved for '${item.title}'! Handover session is active. Meet at ${item.meetingPoint || "designated local sector post"}.`,
           type: "HANDOVER_REMINDER",
           userId: itemId,
         });
@@ -279,13 +212,27 @@ export async function POST(request: NextRequest) {
         success: true,
         verified: true,
         method: "APPROVE",
-        message: "Handover approved! 48-hour handover window is now active.",
+        message: "Verification approved! Handover window is now active.",
         unlockedDetails: {
           privateRawUrl: signedRawUrl,
           meetingPoint: item.meetingPoint,
           contactPhone: rawItem?.contactPhone || "+250 788 000 000 (Safe Handover)",
           claimedAt: updateResult.item?.claimedAt,
         },
+      });
+    }
+
+    // 3. FINDER REJECTS CLAIM
+    if (option === "REJECT") {
+      await updateItemVerification(itemId, {
+        visualReviewPending: false,
+        isVerified: false,
+      });
+
+      return NextResponse.json({
+        success: true,
+        rejected: true,
+        message: "Claim has been rejected. Listing remains active.",
       });
     }
 

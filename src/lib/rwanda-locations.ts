@@ -1,14 +1,18 @@
+export interface RwandaDistrict {
+  name: string;
+  sectors: string[];
+}
+
 export interface RwandaProvince {
   name: string;
-  districts: {
-    name: string;
-    sectors: string[];
-  }[];
+  code: "KIGALI" | "NORTH" | "SOUTH" | "EAST" | "WEST";
+  districts: RwandaDistrict[];
 }
 
 export const RWANDA_LOCATIONS: RwandaProvince[] = [
   {
     name: "Kigali City (Umujyi wa Kigali)",
+    code: "KIGALI",
     districts: [
       {
         name: "Gasabo",
@@ -35,90 +39,268 @@ export const RWANDA_LOCATIONS: RwandaProvince[] = [
     ],
   },
   {
-    name: "Northern Province (Amajyaruguru)",
+    name: "Northern Province (Intara y'Amajyaruguru)",
+    code: "NORTH",
     districts: [
       {
-        name: "Musanze",
-        sectors: ["Busogo", "Cyuve", "Gacaca", "Gashaki", "Gataraga", "Kimonyi", "Kinigi", "Muhoza", "Muko", "Musanze", "Nkotsi", "Nyange", "Remera", "Rwaza", "Shingiro"],
-      },
-      {
-        name: "Gicumbi",
-        sectors: ["Bukure", "Bwisige", "Byumba", "Cyumba", "Giti", "Kaniga", "Manyagiro", "Miyove", "Kageyo", "Mukarange", "Muko", "Mutete", "Nyamiyaga", "Nyankenke", "Rubaya", "Rukomo", "Rushaki", "Rutare", "Ruvune", "Rwamiko", "Shangasha"],
-      },
-      {
-        name: "Rulindo",
-        sectors: ["Base", "Burega", "Bushoki", "Buyoga", "Cyinzuzi", "Cyungo", "Kinihira", "Kisaro", "Masoro", "Mbogo", "Murambi", "Ngoma", "Ntarabana", "Rukozo", "Rusiga", "Shyorongi", "Tumba"],
-      },
-      {
         name: "Burera",
-        sectors: ["Bungwe", "Butaro", "Cyanika", "Cyeru", "Gahunga", "Gatebe", "Gitovu", "Kagogo", "Kinoni", "Kinyababa", "Kivuye", "Nemba", "Rugarama", "Rugendabari", "Ruhunde", "Rusarabuye", "Rwerere"],
+        sectors: [
+          "Bungwe", "Butaro", "Cyanika", "Cyeru", "Gahunga", 
+          "Gatebe", "Gitovu", "Kagogo", "Kinoni", "Kinyababa", 
+          "Kivuye", "Nemba", "Rugarama", "Rugendabari", "Ruhunde", 
+          "Rusarabuye", "Rwerere"
+        ],
       },
       {
         name: "Gakenke",
-        sectors: ["Busengo", "Coko", "Cyabingo", "Gakenke", "Gashenyi", "Mugunga", "Janja", "Kamubuga", "Karambo", "Kivuruga", "Mataba", "Minazi", "Muhondo", "Muyongwe", "Muzo", "Nemba", "Ruli", "Rusasa", "Rushashi"],
+        sectors: [
+          "Busengo", "Coko", "Cyabingo", "Gakenke", "Gashenyi", 
+          "Janja", "Kamubuga", "Karambo", "Kivuruga", "Mataba", 
+          "Minazi", "Mugunga", "Muhondo", "Muyongwe", "Muzo", 
+          "Nemba", "Ruli", "Rusasa", "Rushashi"
+        ],
+      },
+      {
+        name: "Gicumbi",
+        sectors: [
+          "Bukure", "Bwisige", "Byumba", "Cyumba", "Giti", 
+          "Kaniga", "Manyagiro", "Miyove", "Kageyo", "Mukarange", 
+          "Muko", "Mutete", "Nyamiyaga", "Nyankenke", "Rubaya", 
+          "Rukomo", "Rushaki", "Rutare", "Ruvune", "Rwamiko", "Shangasha"
+        ],
+      },
+      {
+        name: "Musanze",
+        sectors: [
+          "Busogo", "Cyuve", "Gacaca", "Gashaki", "Gataraga", 
+          "Kimonyi", "Kinigi", "Muhoza", "Muko", "Musanze", 
+          "Nkotsi", "Nyange", "Remera", "Rwaza", "Shingiro"
+        ],
+      },
+      {
+        name: "Rulindo",
+        sectors: [
+          "Base", "Burega", "Bushoki", "Buyoga", "Cyinzuzi", 
+          "Cyungo", "Kinihira", "Kisaro", "Masoro", "Mbogo", 
+          "Murambi", "Ngoma", "Ntarabana", "Rukozo", "Rusiga", 
+          "Shyorongi", "Tumba"
+        ],
       },
     ],
   },
   {
-    name: "Southern Province (Amajyepfo)",
+    name: "Southern Province (Intara y'Amajyepfo)",
+    code: "SOUTH",
     districts: [
       {
+        name: "Gisagara",
+        sectors: [
+          "Gikonko", "Gishubi", "Kansi", "Kibilizi", "Kigembe", 
+          "Mamba", "Muganza", "Mugombwa", "Mukindo", "Musha", 
+          "Ndora", "Nyanza", "Save"
+        ],
+      },
+      {
         name: "Huye",
-        sectors: ["Gishamvu", "Karama", "Kigoma", "Kinazi", "Maraba", "Mbazi", "Mukura", "Ngoma", "Ruhashya", "Huye", "Rusatira", "Rwaniro", "Simbi", "Tumba"],
+        sectors: [
+          "Gishamvu", "Huye", "Karama", "Kigoma", "Kinazi", 
+          "Maraba", "Mbazi", "Mukura", "Ngoma", "Ruhashya", 
+          "Rusatira", "Rwaniro", "Simbi", "Tumba"
+        ],
+      },
+      {
+        name: "Kamonyi",
+        sectors: [
+          "Gacurabwenge", "Karama", "Kayenzi", "Kayumbu", "Mugina", 
+          "Musambira", "Ngamba", "Nyamiyaga", "Nyarubaka", "Rugarika", 
+          "Rukoma", "Runda"
+        ],
       },
       {
         name: "Muhanga",
-        sectors: ["Cyeza", "Kabacuzi", "Kibangu", "Kiyumba", "Muhanga", "Mushishiro", "Nyabinoni", "Nyamabuye", "Nyarusange", "Rongi", "Rugendabari", "Shyogwe"],
+        sectors: [
+          "Cyeza", "Kabacuzi", "Kibangu", "Kiyumba", "Muhanga", 
+          "Mushishiro", "Nyabinoni", "Nyamabuye", "Nyarusange", "Rongi", 
+          "Rugendabari", "Shyogwe"
+        ],
+      },
+      {
+        name: "Nyamagabe",
+        sectors: [
+          "Buruhukiro", "Cyanika", "Gatare", "Kaduha", "Kamegeli", 
+          "Kibirizi", "Kibumbwe", "Kitabi", "Mugano", "Musange", 
+          "Musebeya", "Mushubi", "Nkomane", "Gasaka", "Tare", 
+          "Uwinkingi"
+        ],
       },
       {
         name: "Nyanza",
-        sectors: ["Busasamana", "Busoro", "Cyabakamyi", "Kibilizi", "Kigoma", "Mukingo", "Muyira", "Ntyazo", "Nyagisozi", "Rwabicuma"],
+        sectors: [
+          "Busasamana", "Busoro", "Cyabakamyi", "Kibilizi", "Kigoma", 
+          "Mukingo", "Muyira", "Ntyazo", "Nyagisozi", "Rwabicuma"
+        ],
+      },
+      {
+        name: "Nyaruguru",
+        sectors: [
+          "Busanze", "Cyahinda", "Kibeho", "Kivu", "Mata", 
+          "Muganza", "Munini", "Ngera", "Ngoma", "Nyabimata", 
+          "Nyagisozi", "Ruheru", "Ruramba", "Rusenge"
+        ],
       },
       {
         name: "Ruhango",
-        sectors: ["Bweramana", "Byimana", "Kabagali", "Kinazi", "Kinihira", "Mbuye", "Mwendo", "Ntongwe", "Ruhango"],
+        sectors: [
+          "Bweramana", "Byimana", "Kabagali", "Kinazi", "Kinihira", 
+          "Mbuye", "Mwendo", "Ntongwe", "Ruhango"
+        ],
       },
     ],
   },
   {
-    name: "Eastern Province (Iburasirazuba)",
+    name: "Eastern Province (Intara y'Iburasirazuba)",
+    code: "EAST",
     districts: [
       {
-        name: "Rwamagana",
-        sectors: ["Fumbwe", "Gahengeri", "Gishari", "Karenge", "Kigabiro", "Muhazi", "Munyaga", "Munyiginya", "Musha", "Muyumbu", "Mwulire", "Nyakaliro", "Nzige", "Rubona"],
+        name: "Bugesera",
+        sectors: [
+          "Gashora", "Juru", "Kamabuye", "Mareba", "Mayange", 
+          "Musenyi", "Mwogo", "Ngeruka", "Ntarama", "Nyamata", 
+          "Nyarugenge", "Rilima", "Ruhuha", "Rweru", "Shyara"
+        ],
       },
       {
-        name: "Bugesera",
-        sectors: ["Gashora", "Juru", "Kamabuye", "Ntarama", "Mareba", "Mayange", "Musenyi", "Mwogo", "Ngeruka", "Nyamata", "Nyarugenge", "Rilima", "Ruhuha", "Rweru", "Shyara"],
+        name: "Gatsibo",
+        sectors: [
+          "Gasange", "Gatsibo", "Gitoki", "Kabarore", "Kageyo", 
+          "Kiramuruzi", "Kiziguro", "Muhura", "Murambi", "Ngarama", 
+          "Nyagihanga", "Remera", "Rugarama", "Rwimbogo"
+        ],
       },
       {
         name: "Kayonza",
-        sectors: ["Gahini", "Kabare", "Kabarondo", "Mukarange", "Murama", "Murundi", "Mwiri", "Ndego", "Nyamirama", "Rukara", "Ruramira", "Rwinkwavu"],
+        sectors: [
+          "Gahini", "Kabare", "Kabarondo", "Mukarange", "Murama", 
+          "Murundi", "Mwiri", "Ndego", "Nyamirama", "Rukara", 
+          "Ruramira", "Rwinkwavu"
+        ],
+      },
+      {
+        name: "Kirehe",
+        sectors: [
+          "Gahara", "Gatore", "Kigarama", "Kigina", "Kirehe", 
+          "Mahama", "Mpanga", "Musaza", "Mushikiri", "Nasho", 
+          "Nyamugari", "Nyarubuye"
+        ],
+      },
+      {
+        name: "Ngoma",
+        sectors: [
+          "Gashanda", "Jarama", "Karembo", "Kazo", "Kibungo", 
+          "Mugesera", "Murama", "Mutenderi", "Remera", "Rukira", 
+          "Rukumberi", "Rurenge", "Sake", "Zaza"
+        ],
+      },
+      {
+        name: "Nyagatare",
+        sectors: [
+          "Gatunda", "Karama", "Karangazi", "Katabagemu", "Kiyombe", 
+          "Matimba", "Mimuri", "Mukama", "Musheli", "Nyagatare", 
+          "Rukomo", "Rwempasha", "Rwimiyaga", "Tabagwe"
+        ],
+      },
+      {
+        name: "Rwamagana",
+        sectors: [
+          "Fumbwe", "Gahengeri", "Gishari", "Karenge", "Kigabiro", 
+          "Muhazi", "Munyaga", "Munyiginya", "Musha", "Muyumbu", 
+          "Mwulire", "Nyakaliro", "Nzige", "Rubona"
+        ],
       },
     ],
   },
   {
-    name: "Western Province (Iburengerazuba)",
+    name: "Western Province (Intara y'Iburengerazuba)",
+    code: "WEST",
     districts: [
       {
+        name: "Karongi",
+        sectors: [
+          "Bwishyura", "Gishyita", "Gisovu", "Gitesi", "Mubuga", 
+          "Murambi", "Murundi", "Mutuntu", "Rubengera", "Rugabano", 
+          "Ruganda", "Rwankuba", "Twumba"
+        ],
+      },
+      {
+        name: "Ngororero",
+        sectors: [
+          "Bwira", "Gatumba", "Hindiro", "Kabaya", "Kageyo", 
+          "Kavumu", "Matyazo", "Muhanda", "Muhororo", "Ndaro", 
+          "Ngororero", "Nyange", "Sovu"
+        ],
+      },
+      {
+        name: "Nyabihu",
+        sectors: [
+          "Bigogwe", "Jenda", "Jomba", "Kabatwa", "Karago", 
+          "Kintobo", "Mukamira", "Muringa", "Rambura", "Rugera", 
+          "Rurembo", "Shyira"
+        ],
+      },
+      {
+        name: "Nyamasheke",
+        sectors: [
+          "Bushekeri", "Bushenge", "Cyato", "Gihombo", "Kagano", 
+          "Kanjongo", "Karambi", "Karengera", "Kirimbi", "Macuba", 
+          "Mahembe", "Nyabitekeri", "Rangiro", "Ruharambuga", "Shangi"
+        ],
+      },
+      {
         name: "Rubavu",
-        sectors: ["Bugeshi", "Busasamana", "Cyanzarwe", "Gisenyi", "Kanama", "Kanzenze", "Mudende", "Nyakiliba", "Nyamyumba", "Nyundo", "Rubavu", "Rugerero"],
+        sectors: [
+          "Bugeshi", "Busasamana", "Cyanzarwe", "Gisenyi", "Kanama", 
+          "Kanzenze", "Mudende", "Nyakiliba", "Nyamyumba", "Nyundo", 
+          "Rubavu", "Rugerero"
+        ],
       },
       {
         name: "Rusizi",
-        sectors: ["Bugarama", "Butare", "Bweyeye", "Gikundamvura", "Gashonga", "Giheke", "Gihundwe", "Gitambi", "Kamembe", "Muganza", "Mururu", "Nkanka", "Nkombo", "Nkungu", "Nyakabuye", "Nyakarenzo", "Nzahaha", "Rwimbogo"],
+        sectors: [
+          "Bugarama", "Butare", "Bweyeye", "Gashonga", "Giheke", 
+          "Gihundwe", "Gikundamvura", "Gitambi", "Kamembe", "Muganza", 
+          "Mururu", "Nkanka", "Nkombo", "Nkungu", "Nyakabuye", 
+          "Nyakarenzo", "Nzahaha", "Rwimbogo"
+        ],
       },
       {
-        name: "Karongi",
-        sectors: ["Bwishyura", "Gishyita", "Gisovu", "Gitesi", "Mubuga", "Murambi", "Murundi", "Mutuntu", "Rubengera", "Rugabano", "Ruganda", "Rwankuba", "Twumba"],
+        name: "Rutsiro",
+        sectors: [
+          "Boneza", "Gihango", "Kigeyo", "Kivumu", "Manihira", 
+          "Mukura", "Murunda", "Musasa", "Mushonyi", "Mushubati", 
+          "Nyabirasi", "Ruhango", "Rusebeya"
+        ],
       },
     ],
   },
 ];
 
+export const PROVINCE_NAMES = RWANDA_LOCATIONS.map((p) => p.name);
+
 export const ALL_DISTRICTS = RWANDA_LOCATIONS.flatMap((p) => p.districts.map((d) => d.name)).sort();
 
 export const KIGALI_DISTRICTS = ["Gasabo", "Kicukiro", "Nyarugenge"];
+
+export function getDistrictsForProvince(provinceName: string): string[] {
+  if (!provinceName) return [];
+  const normalized = provinceName.trim().toLowerCase();
+  const prov = RWANDA_LOCATIONS.find(
+    (p) => p.name.toLowerCase().includes(normalized) || p.code.toLowerCase() === normalized
+  );
+  if (prov) {
+    return prov.districts.map((d) => d.name).sort();
+  }
+  return [];
+}
 
 export function getSectorsForDistrict(districtName: string): string[] {
   if (!districtName) return [];
@@ -133,3 +315,15 @@ export function getSectorsForDistrict(districtName: string): string[] {
   return [];
 }
 
+export function getProvinceForDistrict(districtName: string): string | null {
+  if (!districtName) return null;
+  for (const prov of RWANDA_LOCATIONS) {
+    const match = prov.districts.some(
+      (d) => d.name.toLowerCase() === districtName.trim().toLowerCase()
+    );
+    if (match) {
+      return prov.name;
+    }
+  }
+  return null;
+}

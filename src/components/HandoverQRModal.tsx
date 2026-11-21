@@ -234,10 +234,10 @@ export default function HandoverQRModal({
             </div>
             <div>
               <h3 id="handover-modal-title" className="text-sm font-bold text-[#1A201C]">
-                MoMo Escrow & In-Person Handover
+                MoMo Escrow &amp; In-Person Handover
               </h3>
-              <p className="text-[11px] text-[#65736B]">
-                Phase 5 QR Check-In Verification
+              <p className="text-[11px] text-[#4A5568]">
+                In-Person Handover Verification
               </p>
             </div>
           </div>

@@ -66,6 +66,15 @@ export interface Item {
   claimerId?: string | null; // UID of claimer / owner
 }
 
+export interface ProofDetails {
+  fullName?: string;
+  dateOfBirth?: string;
+  serialEnding?: string;
+  markings?: string;
+  challengeAnswer?: string;
+  submittedAt?: string;
+}
+
 /**
  * Verification document in the 'verifications' collection (1:1 with item)
  */
@@ -79,7 +88,8 @@ export interface Verification {
   visualPassed: boolean;     // Dual Verification Option B: Photo comparison pass
   visualProofText?: string;  // Written proof submitted by claimer (Option B)
   visualReviewPending?: boolean; // True while waiting for finder review
-  isVerified: boolean;       // True if EITHER Option A OR Option B passed
+  proofDetails?: ProofDetails; // Mandatory submitted proof details
+  isVerified: boolean;       // True ONLY when finder explicitly approves
   verifiedAt?: FirestoreDate | null;
   verifiedBy?: string | null; // Claimer UID
 }

@@ -26,48 +26,56 @@ export async function GET(req: NextRequest) {
     const allItems = await getAllItemsRaw();
     const allEscrows = await getAllEscrowTransactions();
 
-    // Query user listings & claims
+    // Query user listings & claims directly
     const { myListings, myClaims } = await getItemsForUser(phone, uid);
 
-    // If user is new and has no listings, return existing active items as preview or empty array
-    const userListings = myListings.length > 0 ? myListings : allItems.slice(0, 3);
+    // Filter handovers strictly belonging to this authenticated user (as Finder or Claimer)
+    const userHandovers = allItems.filter((item) => {
+      const isUserFinder = (uid && item.finderId === uid) || (phone && (item as unknown as { contactPhone?: string }).contactPhone === phone);
+      const isUserClaimer = (uid && item.claimerId === uid) || myClaims.some((c) => c.id === item.id);
+      return (item.status === "CLAIMED" || item.status === "RESOLVED") && (isUserFinder || isUserClaimer);
+    });
 
     // Enrich claims and handovers with verification details and active sessions
     const enrichedHandovers = await Promise.all(
-      allItems
-        .filter((item) => item.status === "CLAIMED" || myClaims.some((c) => c.id === item.id))
-        .map(async (item) => {
-          const verification = await getVerificationByItemId(item.id);
-          const handoverSession = await getHandoverSessionByItemId(item.id);
-          const escrow = allEscrows.find((e) => e.itemId === item.id);
+      userHandovers.map(async (item) => {
+        const verification = await getVerificationByItemId(item.id);
+        const handoverSession = await getHandoverSessionByItemId(item.id);
+        const escrow = allEscrows.find((e) => e.itemId === item.id);
 
-          return {
-            item,
-            verification,
-            handoverSession,
-            escrow,
-          };
-        })
+        return {
+          item,
+          verification,
+          handoverSession,
+          escrow,
+        };
+      })
     );
 
-    // Calculate escrow wallet stats
-    const lockedBalance = allEscrows
+    // Filter user's escrows
+    const userEscrows = allEscrows.filter((e) => {
+      return (uid && (e.payerId === uid || e.recipientId === uid)) ||
+             userHandovers.some((item) => item.id === e.itemId);
+    });
+
+    // Calculate escrow wallet stats for this user
+    const lockedBalance = userEscrows
       .filter((e) => e.status === "LOCKED")
       .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-    const releasedBalance = allEscrows
+    const releasedBalance = userEscrows
       .filter((e) => e.status === "RELEASED")
       .reduce((sum, e) => sum + (e.amount || 0), 0);
 
     return NextResponse.json({
       success: true,
-      listings: userListings,
+      listings: myListings,
       handovers: enrichedHandovers,
-      escrows: allEscrows,
+      escrows: userEscrows,
       wallet: {
         lockedBalance,
         releasedBalance,
-        totalTransactions: allEscrows.length,
+        totalTransactions: userEscrows.length,
       },
     });
   } catch (error) {
