@@ -707,10 +707,12 @@ function DashboardContent() {
                             <span>Location:</span>
                             <span className="font-medium text-[#1A201C]">{item.sector}, {item.district}</span>
                           </div>
-                          <div className="flex items-center justify-between text-[#65736B]">
-                            <span>Reward/Fee:</span>
-                            <span className="font-bold text-[#10B981]">{(item.feeOrReward || 0).toLocaleString()} RWF</span>
-                          </div>
+                          {item.type === "LOST" && (item.rewardAmount || item.feeOrReward || 0) > 0 && (
+                            <div className="flex items-center justify-between text-[#65736B]">
+                              <span>Reward Offered:</span>
+                              <span className="font-bold text-[#10B981]">{(item.rewardAmount || item.feeOrReward || 0).toLocaleString()} RWF</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -817,7 +819,7 @@ function DashboardContent() {
                             </p>
                           </div>
 
-                          {escrow && (
+                          {escrow && escrow.amount > 0 && (
                             <div className="flex items-center gap-3 bg-[#EBF3EF] px-4 py-2 rounded-2xl border border-[#DEEBE5]">
                               <Coins className="w-5 h-5 text-[#10B981]" />
                               <div>
@@ -839,7 +841,7 @@ function DashboardContent() {
                                 <span>Digital Handover Summary &amp; Escrow Release Receipt</span>
                               </div>
                               <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
-                                {escrow?.momoRef || "MOMO_VERIFIED"}
+                                {escrow && escrow.amount > 0 ? (escrow.momoRef || "MOMO_VERIFIED") : "FREE_COMMUNITY_HANDOVER"}
                               </span>
                             </div>
 
@@ -857,9 +859,13 @@ function DashboardContent() {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[10px] text-[#4A5568] block uppercase font-bold">Escrow Payout Disbursed</span>
+                                <span className="text-[10px] text-[#4A5568] block uppercase font-bold">
+                                  {escrow && escrow.amount > 0 ? "Escrow Payout Disbursed" : "Recovery Type"}
+                                </span>
                                 <span className="font-bold text-emerald-700">
-                                  {(escrow?.amount || 0).toLocaleString()} RWF (+{escrow?.platformFee || 100} RWF fee)
+                                  {escrow && escrow.amount > 0 
+                                    ? `${escrow.amount.toLocaleString()} RWF (+${escrow.platformFee || 100} RWF fee)`
+                                    : "Community Recovery (No Reward Charged)"}
                                 </span>
                               </div>
                             </div>
@@ -868,7 +874,10 @@ function DashboardContent() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  alert(`--- FOUND IN OFFICIAL HANDOVER RECEIPT ---\nItem: ${item.title}\nRef: ${item.maskedDocNumber || item.id}\nLocation: ${item.district} › ${item.sector}\nMoMo Ref: ${escrow?.momoRef || "VERIFIED"}\nAmount: ${escrow?.amount || 0} RWF\nPlatform Micro-Fee: ${escrow?.platformFee || 100} RWF\nStatus: RESOLVED & DISBURSED\nDigital Elevation Solutions, Kigali`);
+                                  const receiptDetails = escrow && escrow.amount > 0
+                                    ? `MoMo Ref: ${escrow.momoRef || "VERIFIED"}\nAmount: ${escrow.amount} RWF\nPlatform Micro-Fee: ${escrow.platformFee || 100} RWF\nStatus: RESOLVED & DISBURSED`
+                                    : `Type: Citizen Community Recovery\nFinder Fee: 0 RWF (Free)\nStatus: RESOLVED & VERIFIED`;
+                                  alert(`--- FOUND IN OFFICIAL HANDOVER RECEIPT ---\nItem: ${item.title}\nRef: ${item.maskedDocNumber || item.id}\nLocation: ${item.district} › ${item.sector}\n${receiptDetails}\nDigital Elevation Solutions, Kigali`);
                                 }}
                                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-[#DEEBE5] text-[#1B4D3E] hover:bg-[#F8FAF7] text-xs font-semibold cursor-pointer shadow-2xs"
                               >

@@ -18,7 +18,9 @@ import {
   HelpCircle,
   Sparkles,
   LocateFixed,
-  RefreshCw
+  RefreshCw,
+  Camera,
+  X
 } from "lucide-react";
 import { RWANDA_LOCATIONS } from "@/lib/rwanda-locations";
 import { maskDocumentNumber } from "@/lib/masking";
@@ -45,16 +47,15 @@ export default function FinderUploadForm() {
   const [district, setDistrict] = useState("Gasabo");
   const [sector, setSector] = useState("Kimironko");
   const [meetingPoint, setMeetingPoint] = useState("");
-  const [deliveryFee, setDeliveryFee] = useState("2000");
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [locationSuccessMsg, setLocationSuccessMsg] = useState<string | null>(null);
 
-  // Dual Verification Setup (Option C)
+  // Multi-Photo Upload & Dual Verification Setup
   const [secretPrompt, setSecretPrompt] = useState("");
   const [secretAnswer, setSecretAnswer] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   // Status
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,12 +115,48 @@ export default function FinderUploadForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImage(file);
-      setImagePreviewUrl(URL.createObjectURL(file));
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    const validFiles: File[] = [];
+    const validPreviews: string[] = [];
+
+    const currentTotal = selectedImages.length;
+    const remainingSlots = 3 - currentTotal;
+
+    if (remainingSlots <= 0) {
+      setErrorMsg("You can upload a maximum of 3 photos.");
+      return;
     }
+
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    for (const file of filesToProcess) {
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg(`"${file.name}" exceeds the 5MB size limit.`);
+        continue;
+      }
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        setErrorMsg(`"${file.name}" is not a supported format. Please use JPG, PNG, or WebP.`);
+        continue;
+      }
+      validFiles.push(file);
+      validPreviews.push(URL.createObjectURL(file));
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedImages((prev) => [...prev, ...validFiles]);
+      setImagePreviews((prev) => [...prev, ...validPreviews]);
+      setErrorMsg(null);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      return updated;
+    });
   };
 
   const liveMask = rawDocNumber ? maskDocumentNumber(rawDocNumber) : "";
@@ -153,14 +190,20 @@ export default function FinderUploadForm() {
       formData.append("district", district);
       formData.append("sector", sector);
       formData.append("meetingPoint", meetingPoint);
-      formData.append("feeOrReward", deliveryFee || "0");
+      // Strict finder role separation: Finders cannot set fees or demand payments
+      formData.append("feeOrReward", "0");
+      formData.append("rewardAmount", "0");
       formData.append("docNumber", rawDocNumber);
       formData.append("secretPrompt", secretPrompt);
       formData.append("secretAnswer", secretAnswer);
       formData.append("contactPhone", contactPhone);
 
-      if (selectedImage) {
-        formData.append("image", selectedImage);
+      // Append multi-photo uploads
+      selectedImages.forEach((file) => {
+        formData.append("images", file);
+      });
+      if (selectedImages.length > 0) {
+        formData.append("image", selectedImages[0]);
       }
 
       const res = await fetch("/api/items", {
@@ -466,28 +509,6 @@ export default function FinderUploadForm() {
               </p>
             </div>
 
-            {/* Delivery Fee Input */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-[#1A201C]">
-                  {t.rewardOrFeeLabel}
-                </label>
-                <span className="badge-escrow">MoMo Escrow Protected</span>
-              </div>
-              <input
-                type="number"
-                min="0"
-                step="500"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
-                placeholder="e.g. 2000"
-                className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
-              />
-              <p className="text-[11px] text-[#65736B]">
-                Compensation for your transport/effort. The owner locks this in Mobile Money escrow and it pays out automatically upon QR handover scan.
-              </p>
-            </div>
-
             <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
@@ -512,45 +533,68 @@ export default function FinderUploadForm() {
         {/* STEP 3: DUAL VERIFICATION (OPTION C) */}
         {currentStep === 3 && (
           <div className="space-y-5 animate-fade-in">
-            {/* Photo Upload with Zero-Trust Visual Preview */}
+            {/* Multi-Photo Upload with Zero-Trust Visual Preview */}
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-[#1A201C]">
-                {t.uploadPhoto}
-              </label>
-              <div className="relative border-2 border-dashed border-[#DEEBE5] rounded-2xl p-4 text-center hover:bg-[#F8FAF7] transition-colors">
-                <input
-                  id={fileInputId}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                <label htmlFor={fileInputId} className="cursor-pointer flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF3EF] text-[#1B4D3E] flex items-center justify-center mb-2">
-                    <UploadCloud className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-semibold text-[#1B4D3E]">
-                    {selectedImage ? selectedImage.name : "Click to take photo or choose file"}
-                  </span>
-                  <span className="text-[11px] text-[#65736B] mt-0.5">
-                    Our serverless Sharp filter will automatically blur sensitive details for public preview.
-                  </span>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-[#1A201C]">
+                  {t.uploadPhoto} (Up to 3 Photos)
                 </label>
-
-                {imagePreviewUrl && (
-                  <div className="mt-4 relative rounded-xl overflow-hidden border border-[#E5E9E4] max-h-48 flex items-center justify-center bg-gray-50">
-                    <img
-                      src={imagePreviewUrl}
-                      alt="Zero-trust blurred preview of uploaded document"
-                      className="max-h-48 object-contain filter blur-[4px]"
-                    />
-                    <div className="absolute inset-0 bg-[#1B4D3E]/20 flex items-center justify-center text-white text-xs font-semibold gap-1.5">
-                      <Lock className="w-4 h-4" />
-                      <span>Zero-Trust Auto-Blur Applied</span>
-                    </div>
-                  </div>
-                )}
+                <span className="text-[11px] font-medium text-[#4A5568]">
+                  {selectedImages.length}/3 photos selected
+                </span>
               </div>
+              
+              {selectedImages.length < 3 && (
+                <div className="relative border-2 border-dashed border-[#DEEBE5] rounded-2xl p-4 text-center hover:bg-[#F8FAF7] transition-colors">
+                  <input
+                    id={fileInputId}
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImagesChange}
+                    className="hidden"
+                  />
+                  <label htmlFor={fileInputId} className="cursor-pointer flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-xl bg-[#EBF3EF] text-[#1B4D3E] flex items-center justify-center mb-2">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-[#1B4D3E]">
+                      Take photo or browse files (Max 5MB each)
+                    </span>
+                    <span className="text-[11px] text-[#65736B] mt-0.5">
+                      JPG, PNG, or WebP. Sensitive text and serial numbers will be automatically blurred.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* Thumbnails Row */}
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  {imagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative rounded-xl overflow-hidden border border-[#DEEBE5] bg-gray-50 h-28 flex items-center justify-center group">
+                      <img
+                        src={preview}
+                        alt={`Photo thumbnail ${idx + 1}`}
+                        className="w-full h-full object-cover filter blur-[3px]"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-between p-1.5">
+                        <span className="self-start px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono">
+                          #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="self-end p-1 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Secret Challenge Question (Option A) */}

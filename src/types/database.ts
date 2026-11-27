@@ -16,7 +16,7 @@ export type ItemStatus = "ACTIVE" | "CLAIMED" | "EXPIRED" | "RESOLVED" | "DISPUT
 
 export type HandoverStatus = "PENDING" | "COMPLETED" | "DISPUTED";
 
-export type EscrowStatus = "LOCKED" | "RELEASED" | "REFUNDED" | "DISPUTED";
+export type EscrowStatus = "LOCKED" | "RELEASED" | "REFUNDED" | "DISPUTED" | "NONE";
 
 export type SmsType = 
   | "MATCH_ALERT" 
@@ -51,11 +51,14 @@ export interface Item {
   description?: string;
   publicBlurredUrl?: string; // Zero-Trust public photo stored in /items-public-blurred/{itemId}
   privateRawUrl?: string;     // Raw protected photo stored in /items-private-raw/{itemId}
+  imageUrls?: string[];       // Multi-photo uploads support (up to 3 photos)
   district: string;          // e.g. "Gasabo", "Kicukiro", "Nyarugenge"
   sector: string;            // e.g. "Kimironko", "Remera"
   meetingPoint?: string;     // e.g. "Kimironko Police Post"
   scheduledDate?: FirestoreDate | null;
-  feeOrReward: number;       // Reward offered or Finder delivery fee in RWF
+  feeOrReward: number;       // Backwards-compatible fee or reward in RWF
+  rewardAmount?: number;     // Normalized finder appreciation reward in RWF
+  escrowStatus?: EscrowStatus; // Escrow lifecycle status or "NONE"
   maskedDocNumber?: string;  // e.g. "119988****521"
   searchKeywords: string[];  // Lowercased keywords for Firestore array-contains querying
   status: ItemStatus;
@@ -64,6 +67,23 @@ export interface Item {
   claimedAt?: FirestoreDate | null; // 48-hour handover timer start
   finderId?: string | null;  // UID of finder
   claimerId?: string | null; // UID of claimer / owner
+}
+
+/**
+ * OTP Verification record stored in Firestore 'otp_verifications'
+ */
+export interface OtpVerification {
+  id: string; // Document ID (normalized phone e.g. +250788123456)
+  phone: string;
+  hashedOtp: string; // SHA-256(otp + salt)
+  salt: string;
+  attempts: number; // Max 5 verification attempts
+  expiresAt: number; // Unix timestamp ms (5-minute expiry)
+  createdAt: number;
+  lastSentAt: number;
+  purpose: "REGISTRATION" | "PASSWORD_RESET" | "PHONE_VERIFY";
+  fullName?: string;
+  verified?: boolean;
 }
 
 export interface ProofDetails {

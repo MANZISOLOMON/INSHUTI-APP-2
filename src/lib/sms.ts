@@ -73,14 +73,15 @@ export async function sendSmsAlert({
   const notificationId = `sms_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
   const now = new Date().toISOString();
 
-  const apiKey = process.env.SMS_API_KEY;
-  const username = process.env.SMS_USERNAME;
+  const apiKey = (process.env.AFRICASTALKING_API_KEY || process.env.SMS_API_KEY || "").trim();
+  const username = (process.env.AFRICASTALKING_USERNAME || process.env.SMS_USERNAME || "").trim();
+  const senderId = (process.env.AFRICASTALKING_SENDER_ID || process.env.SMS_SENDER_ID || "").trim();
 
   let simulated = true;
   let status: SmsStatus = "SENT";
 
   // Check if real Africa's Talking credentials exist
-  if (apiKey && username && apiKey.trim().length > 0 && username.trim().length > 0) {
+  if (apiKey.length > 0 && username.length > 0) {
     try {
       const isSandbox = username.toLowerCase() === "sandbox";
       const endpoint = isSandbox
@@ -91,6 +92,9 @@ export async function sendSmsAlert({
       bodyParams.append("username", username);
       bodyParams.append("to", to);
       bodyParams.append("message", message);
+      if (senderId.length > 0 && !isSandbox) {
+        bodyParams.append("from", senderId);
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -107,7 +111,8 @@ export async function sendSmsAlert({
         status = "SENT";
         console.log(`[Africa's Talking SMS] Successfully dispatched SMS to ${to}`);
       } else {
-        console.warn(`[Africa's Talking SMS] Gateway returned ${response.status}. Falling back to simulation.`);
+        const errorText = await response.text().catch(() => "");
+        console.warn(`[Africa's Talking SMS] Gateway returned ${response.status}: ${errorText}. Falling back to simulation.`);
         status = "FAILED";
       }
     } catch (err) {

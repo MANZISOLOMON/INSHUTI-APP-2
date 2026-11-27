@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ShieldAlert, 
@@ -17,7 +17,10 @@ import {
   HelpCircle,
   Shield,
   LocateFixed,
-  RefreshCw
+  RefreshCw,
+  Camera,
+  UploadCloud,
+  X
 } from "lucide-react";
 import { RWANDA_LOCATIONS } from "@/lib/rwanda-locations";
 import { maskDocumentNumber } from "@/lib/masking";
@@ -30,11 +33,16 @@ export default function ClaimerBountyForm() {
   const { t } = useLanguage();
 
   // Form State
+  const fileInputId = useId();
   const [category, setCategory] = useState<Category>("PASSPORT");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [rawDocNumber, setRawDocNumber] = useState("");
-  const [rewardAmount, setRewardAmount] = useState("10000");
+  const [rewardAmount, setRewardAmount] = useState("");
+
+  // Multi-Photo Upload State
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   // Location Cascading Dropdowns & Auto-Detect
   const [selectedProvinceName, setSelectedProvinceName] = useState("Kigali City (Umujyi wa Kigali)");
@@ -50,6 +58,48 @@ export default function ClaimerBountyForm() {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Multi-Image change & remove handlers
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    const validFiles: File[] = [];
+    const validPreviews: string[] = [];
+
+    const currentTotal = selectedImages.length;
+    const remainingSlots = 3 - currentTotal;
+
+    if (remainingSlots <= 0) {
+      setErrorMsg("You can upload a maximum of 3 photos.");
+      return;
+    }
+
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    for (const file of filesToProcess) {
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg(`"${file.name}" exceeds the 5MB size limit.`);
+        continue;
+      }
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        setErrorMsg(`"${file.name}" is not a supported format. Please use JPG, PNG, or WebP.`);
+        continue;
+      }
+      validFiles.push(file);
+      validPreviews.push(URL.createObjectURL(file));
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedImages((prev) => [...prev, ...validFiles]);
+      setImagePreviews((prev) => [...prev, ...validPreviews]);
+      setErrorMsg(null);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Dynamic category helpers
   const isDocType = ["NATIONAL_ID", "DRIVING_LICENSE", "PASSPORT"].includes(category);
@@ -125,17 +175,29 @@ export default function ClaimerBountyForm() {
     setIsSubmitting(true);
 
     try {
+      const numericReward = Math.max(0, Number(rewardAmount) || 0);
+
       const formData = new FormData();
       formData.append("type", "LOST");
       formData.append("category", category);
-      formData.append("title", title || `Lost ${category.replace("_", " ")} Bounty`);
+      formData.append("title", title || `Lost ${category.replace("_", " ")}`);
       formData.append("description", description);
       formData.append("district", district);
       formData.append("sector", sector);
       formData.append("meetingPoint", lastSeenLandmark);
-      formData.append("feeOrReward", rewardAmount || "0");
+      formData.append("feeOrReward", String(numericReward));
+      formData.append("rewardAmount", String(numericReward));
+      formData.append("escrowStatus", numericReward > 0 ? "LOCKED" : "NONE");
       formData.append("docNumber", rawDocNumber);
       formData.append("contactPhone", contactPhone);
+
+      // Append multi-photo uploads
+      selectedImages.forEach((file) => {
+        formData.append("images", file);
+      });
+      if (selectedImages.length > 0) {
+        formData.append("image", selectedImages[0]);
+      }
 
       const res = await fetch("/api/items", {
         method: "POST",
@@ -148,10 +210,16 @@ export default function ClaimerBountyForm() {
         throw new Error(data.error || "Failed to post lost bounty");
       }
 
-      setSuccessMsg("Lost property bounty posted successfully! Matching engine alerted.");
+      // If reward <= 0, bypass MoMo escrow checkout completely
+      if (numericReward <= 0) {
+        setSuccessMsg("Lost property listed successfully (Free Community Recovery).");
+      } else {
+        setSuccessMsg("Lost property bounty posted successfully! Reward locked in escrow.");
+      }
+
       setTimeout(() => {
-        router.push("/search?type=LOST");
-      }, 1500);
+        router.push("/dashboard?tab=items");
+      }, 1200);
     } catch (err) {
       setErrorMsg((err as Error).message);
     } finally {
@@ -384,27 +452,90 @@ export default function ClaimerBountyForm() {
           </div>
         </div>
 
-        {/* Reward Bounty */}
+        {/* Optional Finder Appreciation Reward */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-semibold text-[#1A201C]">
-              Bounty Reward Offer (RWF)
+              Optional Finder Appreciation Reward (RWF)
             </label>
-            <span className="badge-escrow">MoMo Escrow Secured</span>
+            <span className="badge-escrow">Optional Escrow</span>
           </div>
           <input
             type="number"
-            min="1000"
-            step="1000"
-            required
+            min="0"
+            step="500"
             value={rewardAmount}
             onChange={(e) => setRewardAmount(e.target.value)}
-            placeholder="e.g. 10000"
+            placeholder="0 (Free Community Recovery) or e.g. 5000"
             className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5E9E4] text-sm text-[#1A201C] focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]/20"
           />
           <p className="text-[11px] text-[#65736B]">
-            Finder receives this guaranteed payout upon verified QR handover check-in.
+            Optional reward for the finder. Set to 0 or leave empty for free community recovery without escrow.
           </p>
+        </div>
+
+        {/* Multi-Photo Upload Dropzone (Up to 3 Photos) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-[#1A201C]">
+              Photos of Lost Item (Up to 3 Photos)
+            </label>
+            <span className="text-[11px] font-medium text-[#4A5568]">
+              {selectedImages.length}/3 photos selected
+            </span>
+          </div>
+          
+          {selectedImages.length < 3 && (
+            <div className="relative border-2 border-dashed border-[#DEEBE5] rounded-2xl p-4 text-center hover:bg-[#F8FAF7] transition-colors">
+              <input
+                id={fileInputId}
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImagesChange}
+                className="hidden"
+              />
+              <label htmlFor={fileInputId} className="cursor-pointer flex flex-col items-center">
+                <div className="w-10 h-10 rounded-xl bg-[#EBF3EF] text-[#1B4D3E] flex items-center justify-center mb-2">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-semibold text-[#1B4D3E]">
+                  Take photo or browse files (Max 5MB each)
+                </span>
+                <span className="text-[11px] text-[#65736B] mt-0.5">
+                  JPG, PNG, or WebP. Helps finders identify your item.
+                </span>
+              </label>
+            </div>
+          )}
+
+          {/* Thumbnails Row */}
+          {imagePreviews.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 pt-2">
+              {imagePreviews.map((preview, idx) => (
+                <div key={idx} className="relative rounded-xl overflow-hidden border border-[#DEEBE5] bg-gray-50 h-28 flex items-center justify-center group">
+                  <img
+                    src={preview}
+                    alt={`Photo thumbnail ${idx + 1}`}
+                    className="w-full h-full object-cover filter blur-[2px]"
+                  />
+                  <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-between p-1.5">
+                    <span className="self-start px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono">
+                      #{idx + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="self-end p-1 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+                      title="Remove photo"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Contact Phone for Match SMS */}

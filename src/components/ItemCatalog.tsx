@@ -527,10 +527,10 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                     {isFound ? "Found Item" : "Lost Bounty"}
                   </span>
 
-                  {item.feeOrReward > 0 && (
+                  {!isFound && (item.rewardAmount || item.feeOrReward || 0) > 0 && (
                     <span className="badge-escrow">
                       <Coins className="w-3 h-3" />
-                      <span>{item.feeOrReward.toLocaleString()} RWF</span>
+                      <span>{(item.rewardAmount || item.feeOrReward || 0).toLocaleString()} RWF</span>
                     </span>
                   )}
                 </div>
@@ -564,7 +564,7 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                     <img
                       src={item.publicBlurredUrl}
                       alt={`Zero-trust blurred preview of ${item.title}`}
-                      className="w-full h-full object-cover filter blur-[4px]"
+                      className="w-full h-full object-cover filter blur-md"
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center p-3 text-center">
@@ -578,10 +578,15 @@ export default function ItemCatalog({ initialType = "ALL" }: { initialType?: str
                   )}
                   <div className="absolute inset-0 bg-[#1B4D3E]/10 backdrop-blur-[2px] flex items-center justify-center">
                     <span className="px-2.5 py-1 rounded-full bg-white/90 text-[#1B4D3E] text-[10px] font-bold border border-[#DEEBE5] shadow-xs flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-[#10B981]" />
-                      {t.dualVerificationRequired}
+                      <Shield className="w-3 h-3 text-[#10B981]" />
+                      <span>{t.dualVerificationRequired}</span>
                     </span>
                   </div>
+                  {item.imageUrls && item.imageUrls.length > 1 && (
+                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-[9px] font-mono font-bold">
+                      1/{item.imageUrls.length} photos
+                    </div>
+                  )}
                 </div>
 
                 {/* Location & Meeting Point Details */}

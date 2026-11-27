@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { 
   findUserByPhone, 
-  setPendingRegistration, 
-  generateNumericOtp 
+  saveUser, 
+  generateSalt, 
+  hashPassword,
+  StoredUser 
 } from "@/lib/user-store";
+import { isPhoneVerified, clearOtpVerification } from "@/lib/otp-store";
 import { formatRwandaPhoneNumber } from "@/lib/firebase/auth";
-import { sendSmsAlert } from "@/lib/sms";
 import { applyRateLimit } from "@/lib/rate-limiter";
 
+/**
+ * POST /api/auth/register
+ * Step 3 of Registration: Sets password and activates account once phone OTP is verified.
+ * Enforces:
+ * - Phone number verified via real SMS OTP (isPhoneVerified === true)
+ * - Minimum 8-character password
+ * - Secure PBKDF2 hash + random salt
+ * - Firestore 'users' collection persistence
+ */
 export async function POST(request: NextRequest) {
   try {
-    const rateLimitError = applyRateLimit(request, "auth_register", 10, 60 * 1000);
+    const rateLimitError = applyRateLimit(request, "auth_register", 15, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
     const body = await request.json().catch(() => ({}));
@@ -56,25 +68,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate real 6-digit OTP
-    const otp = generateNumericOtp();
+    // Enforce OTP verification before allowing password creation
+    const verified = await isPhoneVerified(formattedPhone);
+    if (!verified) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Phone number has not been verified via SMS code yet. Please complete phone verification first.",
+        },
+        { status: 403 }
+      );
+    }
 
-    // Store in pending registration (hash is computed and salt generated in store)
-    setPendingRegistration(formattedPhone, password, otp);
+    // Hash password with secure salt & PBKDF2
+    const salt = generateSalt();
+    const passwordHash = hashPassword(password, salt);
+    const uid = `usr_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    const now = new Date().toISOString();
 
-    // Send real SMS to user's phone via Africa's Talking / SMS Gateway
-    await sendSmsAlert({
-      to: formattedPhone,
-      message: `Found IN: Your verification code is ${otp}. Valid for 10 minutes. Do not share this code.`,
-      type: "MATCH_ALERT",
-      userId: formattedPhone,
-    });
+    const newUser: StoredUser = {
+      id: uid,
+      phone: formattedPhone,
+      fullName: fullName?.trim() || "Citizen User",
+      role: "USER",
+      passwordHash,
+      salt,
+      createdAt: now,
+      updatedAt: now,
+      smsAlertsEnabled: true,
+    };
 
-    // NOTE: NEVER return OTP in JSON payload!
+    // Save to Firestore and local resilience store
+    await saveUser(newUser);
+
+    // Clean up OTP verification record
+    await clearOtpVerification(formattedPhone);
+
     return NextResponse.json({
       success: true,
-      message: "Verification code sent via SMS.",
-      phone: formattedPhone,
+      message: "Account created and activated successfully.",
+      user: {
+        uid: newUser.id,
+        phone: newUser.phone,
+        role: newUser.role,
+        fullName: newUser.fullName,
+      },
     });
   } catch (error) {
     console.error("[API Auth Register Error]:", error);

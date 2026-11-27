@@ -141,7 +141,11 @@ export async function POST(request: NextRequest) {
       contactPhone,
     } = validation.data;
 
-    const imageFile = formData.get("image") as File | null;
+    // Collect all uploaded images (support both multiple 'images' and single 'image')
+    const rawImageFiles = [
+      ...formData.getAll("images"),
+      ...formData.getAll("image"),
+    ].filter((f): f is File => f instanceof File && f.size > 0).slice(0, 3);
 
     const itemId = `item_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
 
@@ -151,23 +155,25 @@ export async function POST(request: NextRequest) {
     // 2. Secret Answer Hash (never save plain-text answer)
     const secretAnswerHash = secretAnswer ? hashSecretAnswer(secretAnswer) : undefined;
 
-    // 3. Image Processing: Zero-Trust Sharp Gaussian Blur & Private Raw Storage
+    // 3. Multi-Image Processing: Zero-Trust Sharp Gaussian Blur & Private Raw Storage
     let publicBlurredUrl: string | undefined = undefined;
     let privateRawUrl: string | undefined = undefined;
+    const imageUrls: string[] = [];
 
-    if (imageFile && imageFile.size > 0) {
-      const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
+    for (let i = 0; i < rawImageFiles.length; i++) {
+      const file = rawImageFiles[i];
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const imgCheck = validateImageBuffer(fileBuffer);
       if (!imgCheck.valid) {
-        return NextResponse.json(
-          { success: false, error: imgCheck.error || "Invalid image upload." },
-          { status: 400 }
-        );
+        continue;
       }
 
       try {
         const { blurredBuffer, rawBuffer, publicStoragePath, privateStoragePath } =
-          await processZeroTrustUpload(fileBuffer, itemId);
+          await processZeroTrustUpload(fileBuffer, `${itemId}_${i}`);
+
+        let blurredItemUrl = "";
+        let rawItemUrl = "";
 
         // Attempt upload to Firebase Cloud Storage
         try {
@@ -177,21 +183,25 @@ export async function POST(request: NextRequest) {
             contentType: "image/webp",
             metadata: { cacheControl: "public, max-age=31536000" },
           });
-          // Set signed or standard URL
-          publicBlurredUrl = `https://storage.googleapis.com/${bucket.name}/${publicStoragePath}`;
+          blurredItemUrl = `https://storage.googleapis.com/${bucket.name}/${publicStoragePath}`;
 
           const privateFile = bucket.file(privateStoragePath);
           await privateFile.save(rawBuffer, {
             contentType: "image/webp",
             metadata: { cacheControl: "private, max-age=0" },
           });
-          privateRawUrl = `https://storage.googleapis.com/${bucket.name}/${privateStoragePath}`;
+          rawItemUrl = `https://storage.googleapis.com/${bucket.name}/${privateStoragePath}`;
         } catch (storageErr) {
           console.warn("[Firebase Storage Note] Local fallback preview applied:", (storageErr as Error).message);
-          // Fallback: Embed blurred preview as a Base64 WebP Data URI for seamless instant display
-          publicBlurredUrl = `data:image/webp;base64,${blurredBuffer.toString("base64")}`;
-          privateRawUrl = `data:image/webp;base64,${rawBuffer.toString("base64")}`;
+          blurredItemUrl = `data:image/webp;base64,${blurredBuffer.toString("base64")}`;
+          rawItemUrl = `data:image/webp;base64,${rawBuffer.toString("base64")}`;
         }
+
+        if (i === 0) {
+          publicBlurredUrl = blurredItemUrl;
+          privateRawUrl = rawItemUrl;
+        }
+        imageUrls.push(blurredItemUrl);
       } catch (sharpErr) {
         console.error("[Sharp Processing Error]:", sharpErr);
       }
@@ -210,6 +220,11 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30-day lifecycle
 
+    // Enforce strict role separation: Finders cannot set fees or rewards
+    const finalFeeOrReward = type === "FOUND" ? 0 : Math.max(0, Number(feeOrReward) || 0);
+    const finalRewardAmount = type === "FOUND" ? 0 : finalFeeOrReward;
+    const finalEscrowStatus = finalRewardAmount > 0 ? "LOCKED" : "NONE";
+
     const newItem: Item = {
       id: itemId,
       type,
@@ -218,10 +233,13 @@ export async function POST(request: NextRequest) {
       description,
       publicBlurredUrl,
       privateRawUrl,
+      imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       district,
       sector,
       meetingPoint,
-      feeOrReward,
+      feeOrReward: finalFeeOrReward,
+      rewardAmount: finalRewardAmount,
+      escrowStatus: finalEscrowStatus,
       maskedDocNumber,
       searchKeywords,
       status: "ACTIVE",
