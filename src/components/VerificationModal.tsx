@@ -57,6 +57,19 @@ export default function VerificationModal({
   const [reviewPending, setReviewPending] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
 
+  // Claim-time appreciation tip selector
+  const [tipSelection, setTipSelection] = useState<"NONE" | "2000" | "5000" | "CUSTOM">("NONE");
+  const [customTipAmount, setCustomTipAmount] = useState<string>("");
+
+  const currentTipAmount = 
+    tipSelection === "NONE" 
+      ? 0 
+      : tipSelection === "2000" 
+      ? 2000 
+      : tipSelection === "5000" 
+      ? 5000 
+      : Math.max(0, Number(customTipAmount) || 0);
+
   useEffect(() => {
     if (isOpen && item) {
       setErrorMsg(null);
@@ -240,16 +253,87 @@ export default function VerificationModal({
                 </div>
               </div>
 
-              {onProceedToEscrow && (
+              {/* Optional Tip Selector for Handover */}
+              <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#DEEBE5] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#1A201C] flex items-center gap-1.5">
+                    <Coins className="w-4 h-4 text-[#10B981]" />
+                    Optional Finder Appreciation Tip
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#1B4D3E]">
+                    {currentTipAmount > 0 ? `${currentTipAmount.toLocaleString()} RWF` : "Free Community Recovery"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#4A5568]">
+                  Finders provide free civic assistance. You can optionally tip them via MoMo escrow upon physical meetup.
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { id: "NONE", label: "None" },
+                    { id: "2000", label: "2,000 RWF" },
+                    { id: "5000", label: "5,000 RWF" },
+                    { id: "CUSTOM", label: "Custom" },
+                  ].map((tip) => {
+                    const isSelected = tipSelection === tip.id;
+                    return (
+                      <button
+                        key={tip.id}
+                        type="button"
+                        onClick={() => setTipSelection(tip.id as any)}
+                        className={`min-h-[44px] px-2 py-2 rounded-xl text-xs font-semibold text-center transition-all cursor-pointer border ${
+                          isSelected
+                            ? "bg-[#1B4D3E] text-white border-[#1B4D3E] shadow-2xs"
+                            : "bg-white text-[#1A201C] border-[#DEEBE5] hover:bg-[#F0F4F1]"
+                        }`}
+                      >
+                        {tip.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {tipSelection === "CUSTOM" && (
+                  <input
+                    type="number"
+                    min="500"
+                    step="500"
+                    value={customTipAmount}
+                    onChange={(e) => setCustomTipAmount(e.target.value)}
+                    placeholder="Enter custom tip in RWF (e.g. 3000)"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#DEEBE5] text-xs text-[#1A201C] focus:outline-none focus:border-[#1B4D3E]"
+                  />
+                )}
+              </div>
+
+              {currentTipAmount > 0 ? (
+                onProceedToEscrow && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onProceedToEscrow({
+                        ...item,
+                        feeOrReward: currentTipAmount,
+                        rewardAmount: currentTipAmount,
+                      });
+                    }}
+                    className="w-full min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#1B4D3E] hover:bg-[#153e32] text-white text-sm font-semibold transition-all cursor-pointer shadow-sm hover:shadow"
+                  >
+                    <Coins className="w-4 h-4 text-[#10B981]" />
+                    <span>Lock {currentTipAmount.toLocaleString()} RWF Tip in MoMo Escrow</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )
+              ) : (
                 <button
                   onClick={() => {
+                    if (onVerificationSuccess && unlockedDetails) {
+                      onVerificationSuccess(unlockedDetails);
+                    }
                     onClose();
-                    onProceedToEscrow(item);
                   }}
                   className="w-full min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#1B4D3E] hover:bg-[#153e32] text-white text-sm font-semibold transition-all cursor-pointer shadow-sm hover:shadow"
                 >
-                  <Coins className="w-4 h-4 text-[#10B981]" />
-                  <span>Proceed to MoMo Escrow &amp; Handover</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+                  <span>Proceed to Handover Meetup (Free Community Handover)</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
@@ -355,6 +439,57 @@ export default function VerificationModal({
                   placeholder="e.g., Brown leather wallet with Bank of Kigali card, keychain with blue fob, minor scratch on back corner..."
                   className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAF7] border border-[#DEEBE5] text-xs text-[#1A201C] focus:outline-none focus:border-[#1B4D3E] focus:bg-white resize-none"
                 />
+              </div>
+
+              {/* Optional Claim-Time Appreciation Tip Selector */}
+              <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#DEEBE5] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#1A201C] flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-[#10B981]" />
+                    Optional Finder Appreciation Tip
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#1B4D3E]">
+                    {currentTipAmount > 0 ? `${currentTipAmount.toLocaleString()} RWF` : "0 RWF (Free)"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#4A5568]">
+                  Finders recover items voluntarily. You can optionally tip them upon meetup.
+                </p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { id: "NONE", label: "None" },
+                    { id: "2000", label: "2,000" },
+                    { id: "5000", label: "5,000" },
+                    { id: "CUSTOM", label: "Custom" },
+                  ].map((tip) => {
+                    const isSelected = tipSelection === tip.id;
+                    return (
+                      <button
+                        key={tip.id}
+                        type="button"
+                        onClick={() => setTipSelection(tip.id as any)}
+                        className={`min-h-[44px] px-2 py-1.5 rounded-xl text-xs font-semibold text-center transition-all cursor-pointer border ${
+                          isSelected
+                            ? "bg-[#1B4D3E] text-white border-[#1B4D3E]"
+                            : "bg-white text-[#1A201C] border-[#DEEBE5] hover:bg-[#F0F4F1]"
+                        }`}
+                      >
+                        {tip.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {tipSelection === "CUSTOM" && (
+                  <input
+                    type="number"
+                    min="500"
+                    step="500"
+                    value={customTipAmount}
+                    onChange={(e) => setCustomTipAmount(e.target.value)}
+                    placeholder="Custom tip in RWF (e.g. 3000)"
+                    className="w-full px-3.5 py-1.5 rounded-xl bg-white border border-[#DEEBE5] text-xs text-[#1A201C] focus:outline-none focus:border-[#1B4D3E]"
+                  />
+                )}
               </div>
 
               <button
