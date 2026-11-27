@@ -8,7 +8,7 @@ import os from "os";
 
 const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const LOCAL_DATA_DIR = isServerless
-  ? path.join(os.tmpdir(), "lost-it-found-it-data")
+  ? path.join(os.tmpdir(), "found-in-data")
   : path.join(process.cwd(), ".data");
 const LOCAL_SMS_FILE = path.join(LOCAL_DATA_DIR, "sms_notifications.json");
 

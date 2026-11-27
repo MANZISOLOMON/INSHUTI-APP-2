@@ -36,7 +36,7 @@ export async function requestMoMoCollection({
   amount,
   payerPhone,
   externalId,
-  payerNote = "Lost & Found Escrow Lock",
+  payerNote = "Found IN Escrow Lock",
   idempotencyKey,
 }: MoMoRequestParams): Promise<MoMoTransactionResult> {
   const momoApiKey = process.env.MOMO_API_KEY;
@@ -133,7 +133,7 @@ export async function disburseMoMoPayout({
   amount,
   recipientPhone,
   externalId,
-  disbursementNote = "Lost & Found Verified Handover Payout",
+  disbursementNote = "Found IN Verified Handover Payout",
   idempotencyKey,
 }: MoMoDisburseParams): Promise<MoMoTransactionResult> {
   const momoApiKey = process.env.MOMO_API_KEY;
@@ -201,7 +201,7 @@ export async function refundMoMoEscrow({
   amount,
   payerPhone,
   externalId,
-  refundNote = "Lost & Found Escrow Refund (Admin Action)",
+  refundNote = "Found IN Escrow Refund (Admin Action)",
 }: {
   amount: number;
   payerPhone: string;

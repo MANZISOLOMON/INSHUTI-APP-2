@@ -7,7 +7,7 @@ import os from "os";
 
 const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const LOCAL_DATA_DIR = isServerless
-  ? path.join(os.tmpdir(), "lost-it-found-it-data")
+  ? path.join(os.tmpdir(), "found-in-data")
   : path.join(process.cwd(), ".data");
 const LOCAL_MATCHES_FILE = path.join(LOCAL_DATA_DIR, "matches.json");
 
@@ -122,12 +122,12 @@ export async function runAutoMatch(targetItem: Item): Promise<MatchCandidate[]> 
     const recipientPhone = rawTarget.contactPhone || rawCandidate.contactPhone;
 
     if (recipientPhone) {
-      const msg = `Inshuti Match Alert: A ${match.confidenceScore}% match for your ${targetItem.category.replace(
+      const msg = `Found IN Match Alert: A ${match.confidenceScore}% match for your ${targetItem.category.replace(
         "_",
         " "
       )} was reported in ${match.item.sector}, ${match.item.district}. Ref: ${
         match.item.maskedDocNumber || "Item"
-      }. Open Lost & Found Registry to verify.`;
+      }. Open Found IN to verify.`;
 
       await sendSmsAlert({
         to: recipientPhone,
